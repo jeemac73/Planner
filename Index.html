@@ -1,0 +1,2239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Retirement">
+<meta name="theme-color" content="#050d1a">
+<title>Retirement Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #050d1a;
+    --bg2: #0a1628;
+    --blue: #4a9eff;
+    --green: #34d399;
+    --amber: #f59e0b;
+    --red: #f87171;
+    --purple: #a78bfa;
+    --text: #e8f0fe;
+    --muted: #8a9bb0;
+    --dim: #a0b0c8;
+    --border: rgba(255,255,255,0.08);
+    --card: rgba(255,255,255,0.03);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; -webkit-text-size-adjust: 100%; }
+  body { overflow-x: hidden; }
+
+  /* API Key Modal */
+  #api-modal {
+    position: fixed; inset: 0; background: rgba(5,13,26,0.95); z-index: 1000;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+    backdrop-filter: blur(8px);
+  }
+  #api-modal.hidden { display: none !important; }
+  .modal-box {
+    background: var(--bg2); border: 1px solid rgba(74,158,255,0.3);
+    border-radius: 20px; padding: 32px 28px; max-width: 420px; width: 100%;
+    box-shadow: 0 0 60px rgba(74,158,255,0.15);
+  }
+  .modal-box h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .modal-box p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+  .modal-box a { color: var(--blue); text-decoration: none; }
+  .modal-input {
+    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    border-radius: 10px; padding: 13px 16px; color: var(--text); font-size: 14px;
+    font-family: 'DM Mono', monospace; outline: none; margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .modal-input:focus { border-color: var(--blue); }
+  .modal-btn {
+    width: 100%; background: var(--blue); border: none; border-radius: 10px;
+    padding: 14px; color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: opacity 0.2s;
+  }
+  .modal-btn:active { opacity: 0.8; }
+  .modal-note { font-size: 12px; color: var(--muted); margin-top: 12px; text-align: center; }
+
+  /* Header */
+  #header {
+    background: rgba(5,13,26,0.9); border-bottom: 1px solid var(--border);
+    padding: calc(var(--safe-top) + 16px) 20px 16px;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; }
+  .header-title { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+  .header-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .status-pill {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 5px 12px; border-radius: 20px;
+  }
+  .status-on { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); color: var(--green); }
+  .status-off { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+
+  /* Tabs */
+  #tab-bar {
+    display: flex; overflow-x: auto; border-bottom: 1px solid var(--border);
+    background: rgba(5,13,26,0.8); position: sticky; top: 72px; z-index: 99;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  #tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex-shrink: 0; background: none; border: none; border-bottom: 2px solid transparent;
+    padding: 12px 16px; color: var(--muted); font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap;
+    transition: color 0.2s; -webkit-tap-highlight-color: transparent;
+  }
+  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+
+  /* Main */
+  #main { padding: 20px 16px calc(var(--safe-bottom) + 40px); max-width: 860px; margin: 0 auto; }
+
+  /* Cards */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  .card-title { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+  /* Stat grid */
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
+  @media (min-width: 600px) { .stat-grid { grid-template-columns: repeat(4, 1fr); } }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .stat-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .stat-value { font-size: 20px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+  /* Track banner */
+  .track-banner { border-radius: 12px; padding: 16px; margin-bottom: 14px; display: flex; align-items: flex-start; gap: 12px; }
+  .track-on { background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.25); }
+  .track-off { background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.25); }
+  .track-icon { font-size: 24px; flex-shrink: 0; }
+  .track-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .track-desc { font-size: 13px; color: var(--dim); line-height: 1.6; }
+
+  /* Form fields */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  @media (min-width: 600px) { .field-grid-3 { grid-template-columns: repeat(3, 1fr); } }
+  .field-group { margin-bottom: 0; }
+  .field-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: block; }
+  .field-wrap { position: relative; display: flex; align-items: center; }
+  .field-pre { position: absolute; left: 11px; color: var(--blue); font-weight: 600; font-size: 13px; pointer-events: none; }
+  .field-suf { position: absolute; right: 11px; color: var(--muted); font-size: 12px; pointer-events: none; }
+  .field-input {
+    width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 14px;
+    font-family: 'DM Mono', monospace; outline: none; transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .field-input:focus { border-color: var(--blue); }
+  .field-input.has-pre { padding-left: 22px; }
+  .field-input.has-suf { padding-right: 30px; }
+  select.field-input { color: var(--text); }
+  select.field-input option { background: var(--bg2); }
+
+  /* Bar chart */
+  .bar-chart { display: flex; align-items: flex-end; gap: 2px; height: 120px; margin-bottom: 10px; }
+  .bar { flex: 1; border-radius: 3px 3px 0 0; transition: height 0.5s ease; min-height: 2px; cursor: pointer; }
+  .bar-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .chart-legend { display: flex; gap: 16px; font-size: 12px; margin-top: 10px; flex-wrap: wrap; }
+
+  /* Alloc bar */
+  .alloc-bar { display: flex; height: 26px; border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+  .alloc-seg { transition: width 0.4s ease; }
+  .alloc-legend { display: flex; gap: 16px; font-size: 12px; flex-wrap: wrap; }
+
+  /* Glide path table */
+  .glide-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 8px; padding: 9px 10px; border-radius: 8px; margin-bottom: 4px; font-size: 13px; }
+  .glide-header { color: var(--muted); font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .glide-highlight { background: rgba(74,158,255,0.1); border: 1px solid rgba(74,158,255,0.2); }
+
+  /* Forecast table */
+  .f-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .f-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .f-table td { padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); font-family: 'DM Mono', monospace; font-size: 12px; }
+  .f-table tr.retire-row { background: rgba(245,158,11,0.08); }
+
+  /* Row lists */
+  .row-list-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+  .row-list-item:last-child { border-bottom: none; }
+  .row-val { font-family: 'DM Mono', monospace; font-weight: 600; }
+
+  /* Insight box */
+  .insight { background: rgba(74,158,255,0.07); border: 1px solid rgba(74,158,255,0.2); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .insight-title { font-size: 14px; font-weight: 700; color: var(--blue); margin-bottom: 6px; }
+  .insight-body { font-size: 13px; color: var(--dim); line-height: 1.7; }
+
+  /* Tax tips */
+  .tip-item { display: flex; gap: 12px; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .tip-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .tip-icon { font-size: 18px; flex-shrink: 0; }
+  .tip-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .tip-desc { font-size: 12px; color: var(--muted); line-height: 1.65; }
+
+  /* Chat */
+  #chat-wrap { display: flex; flex-direction: column; height: calc(100svh - 180px); min-height: 400px; }
+  #chat-messages { flex: 1; overflow-y: auto; padding-bottom: 12px; -webkit-overflow-scrolling: touch; }
+  .msg-row { display: flex; margin-bottom: 12px; }
+  .msg-row.user { justify-content: flex-end; }
+  .msg-bubble {
+    max-width: 85%; padding: 12px 15px; border-radius: 16px; font-size: 14px; line-height: 1.65;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .msg-bubble.assistant { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 4px 16px 16px 16px; color: var(--dim); }
+  .msg-bubble.user { background: rgba(74,158,255,0.14); border: 1px solid rgba(74,158,255,0.25); border-radius: 16px 4px 16px 16px; color: var(--text); }
+  .quick-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .quick-btn {
+    background: rgba(74,158,255,0.07); border: 1px solid rgba(74,158,255,0.18);
+    border-radius: 8px; padding: 8px 10px; color: var(--blue); font-size: 12px;
+    cursor: pointer; text-align: left; font-family: 'DM Sans', sans-serif;
+    line-height: 1.4; -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .quick-btn:active { background: rgba(74,158,255,0.15); }
+  .chat-input-row { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .chat-input {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px;
+    font-family: 'DM Sans', sans-serif; outline: none; resize: none;
+    -webkit-appearance: none; max-height: 100px;
+  }
+  .chat-input:focus { border-color: var(--blue); }
+  .send-btn {
+    background: var(--blue); border: none; border-radius: 10px; padding: 12px 16px;
+    color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s;
+  }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .send-btn:active:not(:disabled) { opacity: 0.8; }
+  .typing { display: flex; gap: 5px; padding: 14px 16px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); animation: bounce 1.2s ease-in-out infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,100% { opacity:0.3; transform:translateY(0); } 50% { opacity:1; transform:translateY(-4px); } }
+
+  /* Key mgmt */
+  .key-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 10px 14px; background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.2); border-radius: 10px; }
+  .key-bar-text { font-size: 12px; color: var(--green); }
+  .key-reset { font-size: 12px; color: var(--muted); background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; text-decoration: underline; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(74,158,255,0.25); border-radius: 2px; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- API Key Modal -->
+<script>
+function skipModal() {
+  var modal = document.getElementById('api-modal');
+  if (modal) { modal.style.cssText = 'display:none!important'; }
+}
+function saveAndContinue() {
+  var inp = document.getElementById('api-key-input');
+  var k = inp ? inp.value.trim() : '';
+  if (k.length < 10) { alert('Key looks too short — should start with sk-ant-'); return; }
+  try { localStorage.setItem('rp_api_key', k); } catch(e) {}
+  window._apiKey = k;
+  skipModal();
+  if (typeof renderAll === 'function') renderAll();
+}
+</script>
+<div id="api-modal">
+  <div class="modal-box">
+    <h2>🔐 API Key</h2>
+    <p>The AI Advisor tab uses the Anthropic API. Get a free key at <strong style="color:var(--blue)">console.anthropic.com</strong> → API Keys.</p>
+    <input class="modal-input" type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="modal-btn" onclick="saveAndContinue()" style="margin-bottom:10px;">Save & Continue</button>
+    <button class="modal-btn" onclick="skipModal()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:var(--muted);">Skip — use planning tabs only</button>
+    <p class="modal-note">Key stored on this device only. You can add it later from the AI Advisor tab.</p>
+  </div>
+</div>
+
+<!-- Header -->
+<div id="header">
+  <div class="header-inner">
+    <div>
+      <div class="header-title">Retirement Planner</div>
+      <div class="header-sub" id="header-sub">Loading...</div>
+    </div>
+    <div class="status-pill" id="status-pill">—</div>
+  </div>
+</div>
+
+<!-- Tab Bar -->
+<div id="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+  <button class="tab-btn" onclick="switchTab('runway')">Runway</button>
+  <button class="tab-btn" onclick="switchTab('tax')">Tax Planning</button>
+  <button class="tab-btn" onclick="switchTab('investments')">Investments</button>
+  <button class="tab-btn" onclick="switchTab('forecast')">Forecast</button>
+  <button class="tab-btn" onclick="switchTab('healthcare')">Healthcare</button>
+  <button class="tab-btn" onclick="switchTab('roth')">Roth Ladder</button>
+  <button class="tab-btn" onclick="switchTab('withdrawal')">Withdrawals</button>
+  <button class="tab-btn" onclick="switchTab('budget')">Budget</button>
+  <button class="tab-btn" onclick="switchTab('advisor')">AI Advisor</button>
+</div>
+
+<!-- Main Content -->
+<div id="main">
+
+  <!-- OVERVIEW -->
+  <div id="tab-overview" class="tab-content active">
+    <div class="stat-grid" id="overview-stats"></div>
+    <div id="overview-banner"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="card">
+        <div class="card-title">Monthly Cash Flow</div>
+        <div id="cashflow-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Account Breakdown</div>
+        <div id="accounts-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUNWAY -->
+  <div id="tab-runway" class="tab-content">
+    <div class="field-grid">
+      <div class="field-group"><label class="field-label">Current Age</label><div class="field-wrap"><input class="field-input" type="number" id="f-age" min="30" max="70" oninput="updateField('age',this.value)"></div></div>
+      <div class="field-group"><label class="field-label">Retirement Age</label><div class="field-wrap"><input class="field-input" type="number" id="f-retirementAge" min="50" max="75" oninput="updateField('retirementAge',this.value)"></div></div>
+      <div class="field-group"><label class="field-label">Monthly Contribution</label><div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="f-monthlyContribution" min="0" oninput="updateField('monthlyContribution',this.value)"></div></div>
+      <div class="field-group"><label class="field-label">Expected Return</label><div class="field-wrap"><input class="field-input has-suf" type="number" id="f-expectedReturn" min="0" max="15" step="0.5" oninput="updateField('expectedReturn',this.value)"><span class="field-suf">%</span></div></div>
+      <div class="field-group"><label class="field-label">Inflation Rate</label><div class="field-wrap"><input class="field-input has-suf" type="number" id="f-inflationRate" min="0" max="10" step="0.1" oninput="updateField('inflationRate',this.value)"><span class="field-suf">%</span></div></div>
+      <div class="field-group"><label class="field-label">Withdrawal Rate</label><div class="field-wrap"><input class="field-input has-suf" type="number" id="f-withdrawalRate" min="2" max="6" step="0.1" oninput="updateField('withdrawalRate',this.value)"><span class="field-suf">%</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Savings Growth (30 Years)</div>
+      <div class="bar-chart" id="runway-chart"></div>
+      <div class="bar-labels"><span>Yr 1</span><span>Yr 10</span><span>Yr 20</span><span>Yr 30</span></div>
+      <div class="chart-legend">
+        <span style="color:var(--blue)">◼ Pre-retirement</span>
+        <span style="color:var(--amber)">◼ Retirement year</span>
+        <span style="color:rgba(74,158,255,0.35)">◼ Post-retirement</span>
+      </div>
+    </div>
+    <div class="stat-grid" id="runway-stats"></div>
+  </div>
+
+  <!-- TAX -->
+  <div id="tab-tax" class="tab-content">
+    <div class="field-grid">
+      <div class="field-group"><label class="field-label">Annual Taxable Income</label><div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="f-taxableIncome" min="0" oninput="updateField('taxableIncome',this.value)"></div></div>
+      <div class="field-group"><label class="field-label">Filing Status</label><div class="field-wrap">
+        <select class="field-input" id="f-filingStatus" onchange="updateField('filingStatus',this.value,false)">
+          <option value="married">Married Filing Jointly</option>
+          <option value="single">Single</option>
+        </select>
+      </div></div>
+      <div class="field-group"><label class="field-label">State Tax Rate</label><div class="field-wrap"><input class="field-input has-suf" type="number" id="f-stateRate" min="0" max="15" step="0.1" oninput="updateField('stateRate',this.value)"><span class="field-suf">%</span></div></div>
+    </div>
+    <div class="stat-grid" id="tax-stats"></div>
+    <div class="insight" id="roth-insight"></div>
+    <div class="card">
+      <div class="card-title">Retirement Tax Considerations</div>
+      <div id="tax-tips"></div>
+    </div>
+  </div>
+
+  <!-- INVESTMENTS -->
+  <div id="tab-investments" class="tab-content">
+
+    <!-- Summary stats -->
+    <div class="stat-grid" id="inv-stats"></div>
+
+    <!-- Allocation bar -->
+    <div class="card">
+      <div class="card-title">Portfolio Allocation</div>
+      <div class="alloc-bar" id="alloc-bar" style="margin-bottom:10px"></div>
+      <div class="alloc-legend" id="alloc-legend"></div>
+    </div>
+
+    <!-- Add holding form -->
+    <div class="card">
+      <div class="card-title">Add Holding</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div class="field-group" style="grid-column:1/-1">
+          <label class="field-label">Name</label>
+          <div class="field-wrap"><input class="field-input" type="text" id="h-name" placeholder="e.g. VTSAX, Apple, Bitcoin" autocorrect="off" autocapitalize="off"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Type</label>
+          <div class="field-wrap">
+            <select class="field-input" id="h-type">
+              <option value="stock">Individual Stock</option>
+              <option value="etf">ETF / Index Fund</option>
+              <option value="bond">Bond / Bond Fund</option>
+              <option value="cash">Cash / Money Market</option>
+              <option value="crypto">Crypto</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Account</label>
+          <div class="field-wrap">
+            <select class="field-input" id="h-account">
+              <option value="Roth IRA">Roth IRA</option>
+              <option value="Traditional IRA">Traditional IRA</option>
+              <option value="401k">401k</option>
+              <option value="Taxable">Taxable Brokerage</option>
+              <option value="Cash">Cash / Savings</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Value</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="h-value" placeholder="0" min="0"></div>
+        </div>
+        <div class="field-group" style="display:flex;align-items:flex-end;">
+          <button onclick="addHolding()" style="width:100%;background:var(--blue);border:none;border-radius:8px;padding:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holdings list -->
+    <div id="holdings-by-type"></div>
+
+    <!-- Glide path -->
+    <div class="card" style="margin-top:14px;">
+      <div class="card-title">Near-Retirement Glide Path</div>
+      <div class="glide-row glide-header"><span>Period</span><span style="color:var(--blue)">Stocks/ETFs</span><span style="color:var(--green)">Bonds</span><span style="color:var(--amber)">Cash</span></div>
+      <div id="glide-rows"></div>
+    </div>
+
+    <!-- Expected return -->
+    <div class="field-group" style="margin-top:14px;">
+      <label class="field-label">Expected Annual Return (used in projections)</label>
+      <div class="field-wrap"><input class="field-input has-suf" type="number" id="f-expectedReturn2" min="0" max="15" step="0.25" oninput="updateField('expectedReturn',this.value)"><span class="field-suf">%</span></div>
+    </div>
+  </div>
+
+  <!-- FORECAST -->
+  <div id="tab-forecast" class="tab-content">
+    <div class="card" style="overflow-x:auto;">
+      <div class="card-title">Year-by-Year Projection</div>
+      <table class="f-table" id="forecast-table"></table>
+    </div>
+  </div>
+
+
+  <!-- HEALTHCARE -->
+  <div id="tab-healthcare" class="tab-content">
+
+    <!-- Summary stats -->
+    <div class="stat-grid" id="hc-stats"></div>
+
+    <!-- Alert banner -->
+    <div class="insight" style="margin-bottom:14px;">
+      <div class="insight-title">🏥 Medicare Gap</div>
+      <div class="insight-body" id="hc-gap-text"></div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="card">
+      <div class="card-title">Your Details</div>
+      <div class="field-grid">
+        <div class="field-group">
+          <label class="field-label">Retirement Age</label>
+          <div class="field-wrap"><input class="field-input" type="number" id="hc-retireAge" min="45" max="64" oninput="renderHealthcare()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Annual Retirement Income</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="hc-income" min="0" oninput="renderHealthcare()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Current Monthly Premium</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="hc-premium" min="0" oninput="renderHealthcare()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Annual Deductible</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="hc-deductible" min="0" oninput="renderHealthcare()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Annual Out-of-Pocket Max</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="hc-oop" min="0" oninput="renderHealthcare()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Healthcare Inflation Rate</label>
+          <div class="field-wrap"><input class="field-input has-suf" type="number" id="hc-inflation" min="0" max="15" step="0.1" oninput="renderHealthcare()"><span class="field-suf">%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACA Subsidy estimate -->
+    <div class="card">
+      <div class="card-title">ACA Subsidy Estimate</div>
+      <div id="hc-aca"></div>
+    </div>
+
+    <!-- Year by year table -->
+    <div class="card" style="overflow-x:auto;">
+      <div class="card-title">Year-by-Year Healthcare Costs (to Medicare)</div>
+      <table class="f-table" id="hc-table"></table>
+    </div>
+
+    <!-- Total bridge -->
+    <div class="card">
+      <div class="card-title">Total Bridge Cost Summary</div>
+      <div id="hc-bridge"></div>
+    </div>
+
+  </div>
+
+
+  <!-- ROTH CONVERSION LADDER -->
+  <div id="tab-roth" class="tab-content">
+
+    <div class="insight" style="margin-bottom:14px;">
+      <div class="insight-title">🔄 Roth Conversion Ladder</div>
+      <div class="insight-body">Convert Traditional IRA / 401k funds to Roth before retirement to reduce future RMDs, lower lifetime tax, and build a tax-free withdrawal base. Conversions count as ordinary income — the goal is to fill your bracket without jumping into the next one.</div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="card">
+      <div class="card-title">Conversion Assumptions</div>
+      <div class="field-grid">
+        <div class="field-group">
+          <label class="field-label">Traditional IRA / 401k Balance</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="rc-trad" min="0" oninput="renderRoth()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Current Annual Income (pre-retirement)</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="rc-income" min="0" oninput="renderRoth()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Retirement Annual Income (withdrawals)</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="rc-ret-income" min="0" oninput="renderRoth()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Filing Status</label>
+          <div class="field-wrap">
+            <select class="field-input" id="rc-filing" onchange="renderRoth()">
+              <option value="married">Married Filing Jointly</option>
+              <option value="single">Single</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Years Until Retirement</label>
+          <div class="field-wrap"><input class="field-input" type="number" id="rc-years" min="1" max="20" oninput="renderRoth()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Expected Annual Growth Rate</label>
+          <div class="field-wrap"><input class="field-input has-suf" type="number" id="rc-growth" min="0" max="15" step="0.5" oninput="renderRoth()"><span class="field-suf">%</span></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Target Income Level (Strategy 3)</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="rc-target" min="0" oninput="renderRoth()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategy summary cards -->
+    <div class="stat-grid" id="rc-strategy-cards"></div>
+
+    <!-- Side by side comparison table -->
+    <div class="card" style="overflow-x:auto;margin-bottom:14px;">
+      <div class="card-title">Year-by-Year Conversion Plan — All 3 Strategies</div>
+      <table class="f-table" id="rc-table"></table>
+    </div>
+
+    <!-- 10-year savings vs not converting -->
+    <div class="card" id="rc-savings-card">
+      <div class="card-title">10-Year Tax Savings vs. Not Converting</div>
+      <div id="rc-savings"></div>
+    </div>
+
+    <!-- Tax cost breakdown -->
+    <div class="card">
+      <div class="card-title">Tax Cost Per Strategy</div>
+      <div id="rc-taxcost"></div>
+    </div>
+
+  </div>
+
+
+  <!-- WITHDRAWAL SEQUENCING -->
+  <div id="tab-withdrawal" class="tab-content">
+
+    <div class="insight" style="margin-bottom:14px;">
+      <div class="insight-title">💸 Withdrawal Sequencing Planner</div>
+      <div class="insight-body">The order you draw from your accounts dramatically affects lifetime taxes. The classic sequence: <strong style="color:var(--text)">Taxable first → Traditional IRA/401k second → Roth last</strong>. But with ACA subsidy management, Roth conversions, and Social Security timing, the optimal sequence is more nuanced — especially for early retirees.</div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="card">
+      <div class="card-title">Retirement Income Needs</div>
+      <div class="field-grid">
+        <div class="field-group">
+          <label class="field-label">Annual Spending Need</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="wd-spend" min="0" oninput="renderWithdrawal()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Social Security Annual (when active)</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="wd-ss" min="0" oninput="renderWithdrawal()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">SS Start Age</label>
+          <div class="field-wrap"><input class="field-input" type="number" id="wd-ss-age" min="62" max="70" oninput="renderWithdrawal()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Retirement Age</label>
+          <div class="field-wrap"><input class="field-input" type="number" id="wd-ret-age" min="50" max="70" oninput="renderWithdrawal()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Taxable Brokerage Balance</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="wd-taxable" min="0" oninput="renderWithdrawal()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Traditional IRA / 401k Balance</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="wd-trad" min="0" oninput="renderWithdrawal()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Roth IRA Balance</label>
+          <div class="field-wrap"><span class="field-pre">$</span><input class="field-input has-pre" type="number" id="wd-roth" min="0" oninput="renderWithdrawal()"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Expected Annual Growth</label>
+          <div class="field-wrap"><input class="field-input has-suf" type="number" id="wd-growth" min="0" max="15" step="0.5" oninput="renderWithdrawal()"><span class="field-suf">%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase summary -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;" id="wd-phase-cards"></div>
+
+    <!-- Side by side phase breakdown -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div class="card">
+        <div class="card-title" style="color:var(--amber)">📅 Phase 1 — Pre-SS Gap</div>
+        <div id="wd-phase1"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--green)">📅 Phase 2 — Post-SS</div>
+        <div id="wd-phase2"></div>
+      </div>
+    </div>
+
+    <!-- Sequence strategy cards -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">Recommended Withdrawal Sequence</div>
+      <div id="wd-sequence"></div>
+    </div>
+
+    <!-- Year by year drawdown table -->
+    <div class="card" style="overflow-x:auto;margin-bottom:14px;">
+      <div class="card-title">Account Balance Drawdown (20 Years)</div>
+      <table class="f-table" id="wd-table"></table>
+    </div>
+
+    <!-- Tax impact -->
+    <div class="card">
+      <div class="card-title">Annual Tax Impact by Phase</div>
+      <div id="wd-tax"></div>
+    </div>
+
+  </div>
+
+
+  <!-- EXPENSE BUDGET PLANNER -->
+  <div id="tab-budget" class="tab-content">
+
+    <div class="insight" style="margin-bottom:14px;">
+      <div class="insight-title">🧾 Expense Budget Planner</div>
+      <div class="insight-body">Build your retirement budget category by category. Enter what you spend <em>today</em> and what you expect to spend <em>in retirement</em> — the planner shows the gap, inflation-adjusts to your retirement date, and feeds the total back into your runway projections.</div>
+    </div>
+
+    <!-- Controls -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;gap:8px;">
+        <button id="view-monthly" onclick="setBudgetView('monthly')" style="background:var(--blue);border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Monthly</button>
+        <button id="view-annual" onclick="setBudgetView('annual')" style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;padding:8px 16px;color:var(--muted);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Annual</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label style="font-size:12px;color:var(--muted);">Inflation rate</label>
+        <div style="position:relative;">
+          <input type="number" id="budget-inflation" value="3.0" min="0" max="10" step="0.1" oninput="renderBudget()"
+            style="width:70px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:7px;padding:7px 24px 7px 10px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none;">
+          <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;pointer-events:none;">%</span>
+        </div>
+        <label style="font-size:12px;color:var(--muted);">Years to retire</label>
+        <input type="number" id="budget-years" value="3" min="1" max="20"  oninput="renderBudget()"
+          style="width:55px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none;">
+      </div>
+    </div>
+
+    <!-- Summary stats -->
+    <div class="stat-grid" id="budget-stats"></div>
+
+    <!-- Category table -->
+    <div class="card" style="margin-bottom:14px;">
+      <div id="budget-categories"></div>
+    </div>
+
+    <!-- Add custom category -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">Add Custom Category</div>
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:end;">
+        <div>
+          <label class="field-label">Category Name</label>
+          <input type="text" id="budget-new-name" placeholder="e.g. Golf membership" autocorrect="off"
+            style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+        </div>
+        <div>
+          <label class="field-label">Group</label>
+          <select id="budget-new-group" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+            <option>Housing</option><option>Food</option><option>Transport</option>
+            <option>Healthcare</option><option>Lifestyle</option><option>Travel</option>
+            <option>Family</option><option>Financial</option><option>Other</option>
+          </select>
+        </div>
+        <div style="padding-bottom:1px;">
+          <label class="field-label">&nbsp;</label>
+          <button onclick="addBudgetCategory()" style="background:var(--blue);border:none;border-radius:8px;padding:10px 18px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inflation projection chart -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">Inflation-Adjusted Projection to Retirement</div>
+      <div id="budget-projection"></div>
+    </div>
+
+    <!-- vs current spending -->
+    <div class="card">
+      <div class="card-title">Retirement vs Today — Spending Gap Analysis</div>
+      <div id="budget-gap"></div>
+    </div>
+
+  </div>
+
+  <!-- AI ADVISOR -->
+  <div id="tab-advisor" class="tab-content">
+    <div id="key-bar-container"></div>
+    <div id="chat-wrap">
+      <div id="chat-messages"></div>
+      <div class="quick-btns" id="quick-btns">
+        <button class="quick-btn" onclick="setInput('Am I on track to retire?')">Am I on track to retire?</button>
+        <button class="quick-btn" onclick="setInput('How should I sequence withdrawals?')">How should I sequence withdrawals?</button>
+        <button class="quick-btn" onclick="setInput('Should I do a Roth conversion?')">Should I do a Roth conversion?</button>
+        <button class="quick-btn" onclick="setInput('What\'s my biggest tax risk?')">What's my biggest tax risk?</button>
+      </div>
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask anything about your plan..." onkeydown="handleEnter(event)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const DEFAULT = {
+  age: 52, retirementAge: 55, currentSavings: 850000, monthlyContribution: 3500,
+  monthlyExpenses: 6500, monthlyIncome: 12000, socialSecurityAge: 67,
+  socialSecurityMonthly: 2200, taxableIncome: 144000, filingStatus: 'married',
+  stateRate: 5.0, rothBalance: 120000, traditionalIRABalance: 380000,
+  taxableAccountBalance: 150000, otherSavings: 200000,
+  stocks: 70, bonds: 20, cash: 10, expectedReturn: 6.5,
+  inflationRate: 3.0, withdrawalRate: 4.0,
+};
+
+let P = (() => { try { return JSON.parse(localStorage.getItem('rp_profile') || 'null') || {...DEFAULT}; } catch(e) { return {...DEFAULT}; } })();
+let chatHistory = [];
+let isLoading = false;
+
+// ── API Key ────────────────────────────────────────────────────────────────
+let _apiKey = '';
+
+function safeLocalGet(k) { try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }
+function safeLocalSet(k, v) { try { localStorage.setItem(k, v); } catch(e) {} }
+function safeLocalRemove(k) { try { localStorage.removeItem(k); } catch(e) {} }
+
+function getApiKey() { return _apiKey || safeLocalGet('rp_api_key'); }
+
+function dismissModal() {
+  const modal = document.getElementById('api-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.setProperty('display', 'none', 'important');
+  }
+}
+
+function skipModal() {
+  dismissModal();
+  renderAll();
+}
+
+function saveAndContinue() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (k.length < 10) { alert('Key looks too short — it should start with sk-ant-'); return; }
+  _apiKey = k;
+  safeLocalSet('rp_api_key', k);
+  dismissModal();
+  renderAll();
+}
+
+function saveApiKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (k.length < 10) { alert('That doesn\'t look like a valid API key — please check and try again.'); return; }
+  _apiKey = k;
+  safeLocalSet('rp_api_key', k);
+  document.getElementById('api-modal').classList.add('hidden');
+  renderAll();
+}
+
+function resetApiKey() {
+  _apiKey = '';
+  safeLocalRemove('rp_api_key');
+  const rm = document.getElementById('api-modal'); rm.classList.remove('hidden'); rm.style.removeProperty('display');
+  document.getElementById('api-key-input').value = '';
+}
+window.addEventListener('DOMContentLoaded', () => {
+  // Check for stored key
+  const stored = safeLocalGet('rp_api_key');
+  if (stored) {
+    _apiKey = stored;
+    const m = document.getElementById('api-modal'); m.classList.add('hidden'); m.style.setProperty('display','none','important');
+  }
+
+  initFields();
+  initHCFields();
+  initRCFields();
+  initWDFields();
+  renderAll();
+  initChat();
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const fmt = v => v.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
+const fmtPct = v => (v??0).toFixed(1)+'%';
+
+function calcProjected(months) {
+  const r = P.expectedReturn / 100 / 12;
+  if (r === 0) return P.currentSavings + P.monthlyContribution * months;
+  return P.currentSavings * Math.pow(1+r,months) + P.monthlyContribution * ((Math.pow(1+r,months)-1)/r);
+}
+
+function calcTax() {
+  const inc = P.taxableIncome;
+  let fed;
+  if (P.filingStatus === 'married') {
+    if (inc<=23200) fed=inc*0.1;
+    else if (inc<=94300) fed=2320+(inc-23200)*0.12;
+    else if (inc<=201050) fed=10924+(inc-94300)*0.22;
+    else if (inc<=383900) fed=34647+(inc-201050)*0.24;
+    else if (inc<=487450) fed=78221+(inc-383900)*0.32;
+    else fed=111357+(inc-487450)*0.35;
+  } else {
+    if (inc<=11600) fed=inc*0.1;
+    else if (inc<=47150) fed=1160+(inc-11600)*0.12;
+    else if (inc<=100525) fed=5426+(inc-47150)*0.22;
+    else if (inc<=191950) fed=17168+(inc-100525)*0.24;
+    else if (inc<=243725) fed=39110+(inc-191950)*0.32;
+    else fed=55578+(inc-243725)*0.35;
+  }
+  const state = inc * (P.stateRate/100);
+  const effective = ((fed+state)/inc)*100;
+  const headroom = Math.max(0,(P.filingStatus==='married'?94300:47150)-inc);
+  return {fed, state, effective, headroom};
+}
+
+function getCalcs() {
+  const ytr = P.retirementAge - P.age;
+  const mtr = ytr * 12;
+  const projected = calcProjected(mtr);
+  const totalNow = P.rothBalance + P.traditionalIRABalance + P.taxableAccountBalance + P.otherSavings;
+  const annualExp = P.monthlyExpenses * 12 * Math.pow(1+P.inflationRate/100, ytr);
+  const required = annualExp / (P.withdrawalRate/100);
+  const onTrack = projected >= required;
+  const delta = projected - required;
+  const tax = calcTax();
+  return {ytr, mtr, projected, totalNow, annualExp, required, onTrack, delta, tax};
+}
+
+// ── Fields ─────────────────────────────────────────────────────────────────
+function initFields() {
+  const numFields = ['age','retirementAge','monthlyContribution','expectedReturn','inflationRate',
+    'withdrawalRate','taxableIncome','stateRate','stocks','bonds','cash','expectedReturn2'];
+  numFields.forEach(id => {
+    const el = document.getElementById('f-'+id);
+    if (el) {
+      const key = id === 'expectedReturn2' ? 'expectedReturn' : id;
+      el.value = P[key];
+    }
+  });
+  const sel = document.getElementById('f-filingStatus');
+  if (sel) sel.value = P.filingStatus;
+}
+
+function updateField(key, val, isNum=true) {
+  P[key] = isNum ? (parseFloat(val)||0) : val;
+  safeLocalSet('rp_profile', JSON.stringify(P));
+  // sync dual expected return fields
+  if (key==='expectedReturn') {
+    const e2 = document.getElementById('f-expectedReturn2');
+    if (e2 && document.activeElement !== e2) e2.value = val;
+    const e1 = document.getElementById('f-expectedReturn');
+    if (e1 && document.activeElement !== e1) e1.value = val;
+  }
+  renderAll();
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+let currentTab = 'overview';
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  currentTab = id;
+  renderAll();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderAll() {
+  const c = getCalcs();
+  renderHeader(c);
+  if (currentTab==='overview') renderOverview(c);
+  if (currentTab==='runway') renderRunway(c);
+  if (currentTab==='tax') renderTax(c);
+  if (currentTab==='investments') renderInvestments(c);
+  if (currentTab==='forecast') renderForecast(c);
+  if (currentTab==='budget') renderBudget();
+  if (currentTab==='withdrawal') renderWithdrawal();
+  if (currentTab==='roth') renderRoth();
+  if (currentTab==='healthcare') renderHealthcare();
+  if (currentTab==='advisor') renderAdvisorBar();
+}
+
+function renderHeader(c) {
+  document.getElementById('header-sub').textContent =
+    `${c.ytr} year${c.ytr!==1?'s':''} to retirement · ${fmt(c.totalNow)} saved`;
+  const pill = document.getElementById('status-pill');
+  pill.textContent = c.onTrack ? 'On Track' : 'Needs Attention';
+  pill.className = 'status-pill ' + (c.onTrack ? 'status-on' : 'status-off');
+}
+
+function statCardHTML(label, value, sub, color) {
+  return `<div class="stat-card" style="border-top:3px solid ${color}">
+    <div class="stat-label">${label}</div>
+    <div class="stat-value" style="color:${color}">${value}</div>
+    ${sub ? `<div class="stat-sub">${sub}</div>` : ''}
+  </div>`;
+}
+
+function rowHTML(label, value, color) {
+  return `<div class="row-list-item"><span style="color:var(--dim);font-size:13px">${label}</span><span class="row-val" style="color:${color}">${value}</span></div>`;
+}
+
+function renderOverview(c) {
+  document.getElementById('overview-stats').innerHTML =
+    statCardHTML('Years to Retire', c.ytr, `Target age ${P.retirementAge}`, 'var(--blue)') +
+    statCardHTML('Total Saved', fmt(c.totalNow), 'All accounts', 'var(--green)') +
+    statCardHTML('Projected', fmt(c.projected), `At ${P.expectedReturn}% return`, 'var(--purple)') +
+    statCardHTML('Target', fmt(c.required), `${P.withdrawalRate}% rule`, 'var(--amber)');
+
+  document.getElementById('overview-banner').innerHTML = `
+    <div class="track-banner ${c.onTrack?'track-on':'track-off'}">
+      <div class="track-icon">${c.onTrack?'✅':'⚠️'}</div>
+      <div>
+        <div class="track-title" style="color:${c.onTrack?'var(--green)':'var(--red)'}">${c.onTrack?'You\'re on track for retirement':'You may need to adjust your plan'}</div>
+        <div class="track-desc">${c.onTrack
+          ? `Projected ${fmt(c.delta)} surplus above target. Focus on withdrawal strategy and tax optimisation.`
+          : `Projected ${fmt(Math.abs(c.delta))} shortfall. Ask the AI Advisor for specific strategies to close the gap.`}</div>
+      </div>
+    </div>`;
+
+  const net = P.monthlyIncome - P.monthlyExpenses - P.monthlyContribution;
+  document.getElementById('cashflow-list').innerHTML =
+    rowHTML('Income', fmt(P.monthlyIncome), 'var(--green)') +
+    rowHTML('Expenses', '-'+fmt(P.monthlyExpenses), 'var(--red)') +
+    rowHTML('Contribution', '-'+fmt(P.monthlyContribution), 'var(--amber)') +
+    rowHTML('Net', (net>=0?'':'-')+fmt(Math.abs(net)), net>=0?'var(--blue)':'var(--red)');
+
+  document.getElementById('accounts-list').innerHTML =
+    rowHTML('Roth IRA', fmt(P.rothBalance), 'var(--green)') +
+    rowHTML('Traditional IRA/401k', fmt(P.traditionalIRABalance), 'var(--blue)') +
+    rowHTML('Taxable Brokerage', fmt(P.taxableAccountBalance), 'var(--purple)') +
+    rowHTML('Other Savings', fmt(P.otherSavings), 'var(--amber)');
+}
+
+function renderRunway(c) {
+  const maxVal = calcProjected(30*12) * 1.15;
+  let bars = '';
+  for (let yr=1; yr<=30; yr++) {
+    const val = calcProjected(yr*12);
+    const h = Math.max(2, (val/maxVal)*100);
+    const isRet = yr===c.ytr;
+    const isPost = yr>c.ytr;
+    const color = isRet ? 'var(--amber)' : isPost ? 'rgba(74,158,255,0.3)' : 'var(--blue)';
+    bars += `<div class="bar" style="height:${h}%;background:${color}" title="Year ${yr}: ${fmt(val)}"></div>`;
+  }
+  document.getElementById('runway-chart').innerHTML = bars;
+  document.getElementById('runway-stats').innerHTML =
+    statCardHTML('Projected Nest Egg', fmt(c.projected), '', 'var(--blue)') +
+    statCardHTML('Inflation-adj Need', fmt(c.annualExp)+'/yr', 'At retirement', 'var(--amber)') +
+    statCardHTML(c.onTrack?'Surplus':'Shortfall', fmt(Math.abs(c.delta)), '', c.onTrack?'var(--green)':'var(--red)') +
+    statCardHTML('Monthly Savings Rate', fmtPct((P.monthlyContribution/P.monthlyIncome)*100), 'of income', 'var(--purple)');
+}
+
+function renderTax(c) {
+  const t = c.tax;
+  document.getElementById('tax-stats').innerHTML =
+    statCardHTML('Federal Tax', fmt(t.fed), fmtPct((t.fed/P.taxableIncome)*100)+' fed rate', 'var(--red)') +
+    statCardHTML('State Tax', fmt(t.state), fmtPct(P.stateRate)+' rate', 'var(--amber)') +
+    statCardHTML('Effective Rate', fmtPct(t.effective), fmt(t.fed+t.state)+' total', 'var(--purple)') +
+    statCardHTML('Roth Headroom', fmt(t.headroom), 'to next bracket', 'var(--blue)');
+
+  document.getElementById('roth-insight').innerHTML = `
+    <div class="insight-title">💡 Roth Conversion Opportunity</div>
+    <div class="insight-body">You have <strong style="color:var(--blue)">${fmt(t.headroom)}</strong> of headroom before hitting the next bracket. Converting this from Traditional IRA to Roth now locks in today's rate and reduces future RMD burden. With ${c.ytr} years to retirement, this window matters.</div>`;
+
+  document.getElementById('tax-tips').innerHTML = [
+    {icon:'📌', title:'RMDs begin at age 73', desc:'Required Minimum Distributions from Traditional IRA/401k force taxable withdrawals. Reducing that balance via Roth conversions now reduces future RMD burden.'},
+    {icon:'📌', title:'Social Security tax threshold', desc:`At ${P.filingStatus==='married'?'$44,000':'$34,000'} combined income, up to 85% of your Social Security becomes taxable. Sequence withdrawals carefully.`},
+    {icon:'📌', title:'0% capital gains window', desc:'In retirement, long-term capital gains may be taxed at 0% if your income stays under the threshold. Taxable account withdrawals can be very tax-efficient.'},
+    {icon:'📌', title:'Healthcare bridge (before Medicare)', desc:'If retiring at 55, you need coverage for ~10 years. ACA subsidies are income-based — keeping income lower could save significantly on premiums.'},
+  ].map(({icon,title,desc}) => `<div class="tip-item"><div class="tip-icon">${icon}</div><div><div class="tip-title">${title}</div><div class="tip-desc">${desc}</div></div></div>`).join('');
+}
+
+// ── Holdings ───────────────────────────────────────────────────────────────
+const TYPE_META = {
+  stock:  { label:'Individual Stocks', color:'var(--blue)',   icon:'📈' },
+  etf:    { label:'ETFs / Index Funds', color:'var(--purple)', icon:'🗂️' },
+  bond:   { label:'Bonds / Bond Funds', color:'var(--green)',  icon:'🏛️' },
+  cash:   { label:'Cash / Money Market', color:'var(--amber)', icon:'💵' },
+  crypto: { label:'Crypto',             color:'var(--red)',    icon:'₿'  },
+};
+
+function loadHoldings() {
+  try { return JSON.parse(safeLocalGet('rp_holdings') || '[]'); } catch(e) { return []; }
+}
+function saveHoldings(h) { safeLocalSet('rp_holdings', JSON.stringify(h)); }
+
+function addHolding() {
+  const name = document.getElementById('h-name').value.trim();
+  const type = document.getElementById('h-type').value;
+  const account = document.getElementById('h-account').value;
+  const value = parseFloat(document.getElementById('h-value').value) || 0;
+  if (!name || value <= 0) { alert('Please enter a name and value greater than $0.'); return; }
+  const holdings = loadHoldings();
+  holdings.push({ id: Date.now(), name, type, account, value });
+  saveHoldings(holdings);
+  document.getElementById('h-name').value = '';
+  document.getElementById('h-value').value = '';
+  syncHoldingsToProfile(holdings);
+  renderInvestments();
+}
+
+function deleteHolding(id) {
+  if (!confirm('Delete this holding?')) return;
+  const holdings = loadHoldings().filter(h => h.id !== id);
+  saveHoldings(holdings);
+  syncHoldingsToProfile(holdings);
+  _editingId = null;
+  renderInvestments();
+}
+
+let _editingId = null;
+
+function startEdit(id) {
+  _editingId = id;
+  renderInvestments();
+  setTimeout(() => {
+    const el = document.getElementById('edit-row-'+id);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }, 50);
+}
+
+function cancelEdit() {
+  _editingId = null;
+  renderInvestments();
+}
+
+function saveEdit(id) {
+  const name    = document.getElementById('ei-name-'+id)?.value.trim();
+  const type    = document.getElementById('ei-type-'+id)?.value;
+  const account = document.getElementById('ei-account-'+id)?.value;
+  const value   = parseFloat(document.getElementById('ei-value-'+id)?.value) || 0;
+  if (!name || value <= 0) { alert('Please enter a name and a value greater than $0.'); return; }
+  const holdings = loadHoldings().map(h => h.id === id ? { ...h, name, type, account, value } : h);
+  saveHoldings(holdings);
+  syncHoldingsToProfile(holdings);
+  _editingId = null;
+  renderInvestments();
+}
+
+function syncHoldingsToProfile(holdings) {
+  // Keep currentSavings in sync with total holdings value
+  const total = holdings.reduce((s,h) => s+h.value, 0);
+  if (total > 0) {
+    P.currentSavings = total;
+    // derive account buckets
+    P.rothBalance = holdings.filter(h=>h.account==='Roth IRA').reduce((s,h)=>s+h.value,0);
+    P.traditionalIRABalance = holdings.filter(h=>h.account==='Traditional IRA'||h.account==='401k').reduce((s,h)=>s+h.value,0);
+    P.taxableAccountBalance = holdings.filter(h=>h.account==='Taxable').reduce((s,h)=>s+h.value,0);
+    P.otherSavings = holdings.filter(h=>h.account==='Cash').reduce((s,h)=>s+h.value,0);
+    safeLocalSet('rp_profile', JSON.stringify(P));
+  }
+}
+
+function renderInvestments() {
+  const holdings = loadHoldings();
+  const total = holdings.reduce((s,h) => s+h.value, 0) || 1;
+
+  // Allocation buckets: stocks+etf = equity, bond, cash+crypto = other
+  const equity = holdings.filter(h=>h.type==='stock'||h.type==='etf').reduce((s,h)=>s+h.value,0);
+  const bonds  = holdings.filter(h=>h.type==='bond').reduce((s,h)=>s+h.value,0);
+  const cash   = holdings.filter(h=>h.type==='cash').reduce((s,h)=>s+h.value,0);
+  const crypto = holdings.filter(h=>h.type==='crypto').reduce((s,h)=>s+h.value,0);
+  const other  = cash + crypto;
+
+  const ep = (equity/total*100), bp = (bonds/total*100), op = (other/total*100);
+
+  // Summary stats
+  document.getElementById('inv-stats').innerHTML =
+    statCardHTML('Total Portfolio', fmt(total), `${holdings.length} holding${holdings.length!==1?'s':''}`, 'var(--blue)') +
+    statCardHTML('Equities', fmt(equity), fmtPct(ep)+' of portfolio', 'var(--purple)') +
+    statCardHTML('Bonds', fmt(bonds), fmtPct(bp)+' of portfolio', 'var(--green)') +
+    statCardHTML('Cash + Crypto', fmt(other), fmtPct(op)+' of portfolio', 'var(--amber)');
+
+  // Allocation bar
+  const cryptoP = crypto/total*100, cashP = cash/total*100;
+  document.getElementById('alloc-bar').innerHTML =
+    `<div class="alloc-seg" style="width:${(equity/total*100).toFixed(1)}%;background:var(--purple)"></div>
+     <div class="alloc-seg" style="width:${bp.toFixed(1)}%;background:var(--green)"></div>
+     <div class="alloc-seg" style="width:${cashP.toFixed(1)}%;background:var(--amber)"></div>
+     <div class="alloc-seg" style="width:${cryptoP.toFixed(1)}%;background:var(--red)"></div>`;
+  document.getElementById('alloc-legend').innerHTML =
+    `<span style="color:var(--purple)">◼ Equities ${ep.toFixed(1)}%</span>
+     <span style="color:var(--green)">◼ Bonds ${bp.toFixed(1)}%</span>
+     <span style="color:var(--amber)">◼ Cash ${cashP.toFixed(1)}%</span>
+     <span style="color:var(--red)">◼ Crypto ${cryptoP.toFixed(1)}%</span>`;
+
+  // Holdings grouped by type
+  const grouped = {};
+  holdings.forEach(h => { if (!grouped[h.type]) grouped[h.type] = []; grouped[h.type].push(h); });
+  const order = ['stock','etf','bond','cash','crypto'];
+  let html = '';
+  if (holdings.length === 0) {
+    html = `<div class="card" style="text-align:center;padding:32px;color:var(--muted)">No holdings yet — add your first one above.</div>`;
+  } else {
+    order.forEach(type => {
+      const group = grouped[type];
+      if (!group) return;
+      const meta = TYPE_META[type];
+      const groupTotal = group.reduce((s,h)=>s+h.value,0);
+      html += `<div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div class="card-title" style="margin-bottom:0">${meta.icon} ${meta.label}</div>
+          <span style="font-family:'DM Mono',monospace;font-size:13px;color:${meta.color};font-weight:600">${fmt(groupTotal)}</span>
+        </div>`;
+      group.forEach(h => {
+        const pct = (h.value/total*100).toFixed(1);
+        const isEditing = _editingId === h.id;
+        if (isEditing) {
+          // Inline edit row
+          html += `<div id="edit-row-${h.id}" style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+              <div style="grid-column:1/-1;">
+                <label style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Name</label>
+                <input id="ei-name-${h.id}" type="text" value="${h.name}" autocorrect="off" autocapitalize="off"
+                  style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--blue);border-radius:7px;padding:9px 11px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+              </div>
+              <div>
+                <label style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Type</label>
+                <select id="ei-type-${h.id}" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--blue);border-radius:7px;padding:9px 11px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+                  <option value="stock" ${h.type==='stock'?'selected':''}>Individual Stock</option>
+                  <option value="etf"   ${h.type==='etf'  ?'selected':''}>ETF / Index Fund</option>
+                  <option value="bond"  ${h.type==='bond' ?'selected':''}>Bond / Bond Fund</option>
+                  <option value="cash"  ${h.type==='cash' ?'selected':''}>Cash / Money Market</option>
+                  <option value="crypto"${h.type==='crypto'?'selected':''}>Crypto</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Account</label>
+                <select id="ei-account-${h.id}" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--blue);border-radius:7px;padding:9px 11px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+                  <option value="Roth IRA"       ${h.account==='Roth IRA'      ?'selected':''}>Roth IRA</option>
+                  <option value="Traditional IRA"${h.account==='Traditional IRA'?'selected':''}>Traditional IRA</option>
+                  <option value="401k"           ${h.account==='401k'          ?'selected':''}>401k</option>
+                  <option value="Taxable"        ${h.account==='Taxable'       ?'selected':''}>Taxable Brokerage</option>
+                  <option value="Cash"           ${h.account==='Cash'          ?'selected':''}>Cash / Savings</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Value</label>
+                <div style="position:relative;">
+                  <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--blue);font-size:13px;font-weight:600;">$</span>
+                  <input id="ei-value-${h.id}" type="number" value="${h.value}" min="0"
+                    style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--blue);border-radius:7px;padding:9px 11px 9px 22px;color:var(--text);font-size:14px;font-family:'DM Mono',monospace;outline:none;">
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button onclick="saveEdit(${h.id})" style="flex:1;background:var(--blue);border:none;border-radius:7px;padding:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>
+              <button onclick="cancelEdit()" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:7px;padding:9px;color:var(--muted);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancel</button>
+              <button onclick="deleteHolding(${h.id})" style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);border-radius:7px;padding:9px 14px;color:var(--red);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Delete</button>
+            </div>
+          </div>`;
+        } else {
+          // Normal display row — tap to edit
+          html += `<div onclick="startEdit(${h.id})" style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;-webkit-tap-highlight-color:transparent;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">${h.account} · ${pct}% of portfolio</div>
+            </div>
+            <div style="font-family:'DM Mono',monospace;font-size:14px;color:${meta.color};font-weight:600;flex-shrink:0">${fmt(h.value)}</div>
+            <div style="color:var(--muted);font-size:13px;flex-shrink:0;padding-left:4px;">✎</div>
+          </div>`;
+        }
+      });
+      html += `</div>`;
+    });
+  }
+  document.getElementById('holdings-by-type').innerHTML = html;
+
+  // Glide path
+  const glide = [
+    {label:'3 years out (now)', s:'60–70%', b:'20–30%', c:'5–10%', hl:true},
+    {label:'At retirement',     s:'50–60%', b:'30–35%', c:'5–10%', hl:false},
+    {label:'5 years post',      s:'40–50%', b:'40–45%', c:'5–10%', hl:false},
+    {label:'10+ years post',    s:'35–45%', b:'45–55%', c:'5%',    hl:false},
+  ];
+  document.getElementById('glide-rows').innerHTML = glide.map(({label,s,b,c,hl}) =>
+    `<div class="glide-row${hl?' glide-highlight':''}">
+      <span style="color:${hl?'var(--blue)':'var(--dim)'};font-weight:${hl?600:400}">${label}</span>
+      <span style="color:var(--blue);font-family:'DM Mono',monospace">${s}</span>
+      <span style="color:var(--green);font-family:'DM Mono',monospace">${b}</span>
+      <span style="color:var(--amber);font-family:'DM Mono',monospace">${c}</span>
+    </div>`).join('');
+
+  // Sync expected return field
+  const e2 = document.getElementById('f-expectedReturn2');
+  if (e2 && document.activeElement !== e2) e2.value = P.expectedReturn;
+}
+
+
+// ── Healthcare ─────────────────────────────────────────────────────────────
+// ── Washington State Healthcare Constants ─────────────────────────────────
+// WA Healthplanfinder benchmark silver plan (age 55, single, 2024): ~$8,400/yr
+// WA expanded Medicaid: eligible up to 138% FPL (~$20,783 single 2024)
+// WA has no state income tax — Roth withdrawals don't count toward MAGI
+// WA apple health (Medicaid) threshold: 138% FPL for adults
+// Average WA silver plan deductible: ~$3,500 | OOP max: ~$8,700 (ACA cap 2024)
+const WA_STATE = {
+  name: 'Washington State',
+  noIncomeTax: true,
+  medicaidFPL: 1.38,           // WA expanded Medicaid up to 138% FPL
+  benchmarkPremiumAge55: 8400, // WA silver benchmark annual premium, age 55 single
+  benchmarkPremiumAge60: 9600, // bumps at age 60
+  avgDeductible: 3500,
+  avgOOP: 8700,
+  marketplace: 'Washington Healthplanfinder (wahealthplanfinder.org)',
+  notes: 'No state income tax — Roth withdrawals do not affect MAGI or ACA subsidy eligibility. WA expanded Medicaid covers adults up to 138% FPL.'
+};
+
+const HC_DEFAULT = {
+  retireAge: 55, income: 45000, premium: 700, deductible: 3500, oop: 8700, inflation: 5.5
+};
+let HC = (() => { try { return JSON.parse(safeLocalGet('rp_hc') || 'null') || {...HC_DEFAULT}; } catch(e) { return {...HC_DEFAULT}; } })();
+
+function initHCFields() {
+  const fields = ['retireAge','income','premium','deductible','oop','inflation'];
+  fields.forEach(f => {
+    const el = document.getElementById('hc-'+f);
+    if (el) el.value = HC[f];
+  });
+}
+
+function readHCFields() {
+  HC.retireAge   = parseFloat(document.getElementById('hc-retireAge')?.value)  || HC_DEFAULT.retireAge;
+  HC.income      = parseFloat(document.getElementById('hc-income')?.value)     || HC_DEFAULT.income;
+  HC.premium     = parseFloat(document.getElementById('hc-premium')?.value)    || HC_DEFAULT.premium;
+  HC.deductible  = parseFloat(document.getElementById('hc-deductible')?.value) || HC_DEFAULT.deductible;
+  HC.oop         = parseFloat(document.getElementById('hc-oop')?.value)        || HC_DEFAULT.oop;
+  HC.inflation   = parseFloat(document.getElementById('hc-inflation')?.value)  || HC_DEFAULT.inflation;
+  safeLocalSet('rp_hc', JSON.stringify(HC));
+}
+
+// ── Washington State ACA Subsidy Calculator ───────────────────────────────
+// FPL 2024 single: $15,060
+// WA expanded Medicaid: ≤138% FPL → Apple Health (Medicaid), not marketplace
+// Enhanced APTCs (no income cliff): contribution capped at sliding % of income
+// WA silver benchmark premiums are above national avg due to higher provider costs
+function calcACASubsidy(income, retireAge) {
+  const FPL = 15060;
+  const pct = income / FPL;
+
+  // WA Apple Health (Medicaid) — if income ≤ 138% FPL
+  if (pct <= WA_STATE.medicaidFPL) {
+    return {
+      subsidy: 0, yourPremium: 0, maxContribution: 0, capPct: 0,
+      pct, benchmarkPremium: 0, isMedicaid: true,
+      medicaidNote: 'At this income level you likely qualify for Washington Apple Health (Medicaid) — premiums are $0 with minimal cost sharing. Verify at wahealthplanfinder.org.'
+    };
+  }
+
+  // ACA sliding scale contribution caps (2024 enhanced APTCs, no cliff)
+  let capPct;
+  if      (pct < 1.5) capPct = 0;
+  else if (pct < 2.0) capPct = 0.02;
+  else if (pct < 2.5) capPct = 0.04;
+  else if (pct < 3.0) capPct = 0.06;
+  else if (pct < 4.0) capPct = 0.085;
+  else                capPct = 0.085; // no cliff with enhanced APTCs
+
+  const maxContribution = income * capPct;
+
+  // WA benchmark silver premium — age-rated (premiums rise ~3:1 from age 21–64)
+  // WA avg single silver: ~$700/mo at 55, ~$800/mo at 60+
+  const benchmarkPremium = (retireAge >= 60) ? WA_STATE.benchmarkPremiumAge60 : WA_STATE.benchmarkPremiumAge55;
+
+  const subsidy = Math.max(0, benchmarkPremium - maxContribution);
+  const yourPremium = Math.max(0, benchmarkPremium - subsidy);
+
+  return { subsidy, yourPremium, maxContribution, capPct, pct, benchmarkPremium, isMedicaid: false };
+}
+
+function renderHealthcare() {
+  readHCFields();
+  const medicareAge = 65;
+  const gapYears = medicareAge - HC.retireAge;
+  if (gapYears <= 0) {
+    document.getElementById('hc-stats').innerHTML = statCardHTML('Medicare Gap', '0 years', 'You retire at/after 65', 'var(--green)');
+    document.getElementById('hc-gap-text').textContent = 'You retire at or after Medicare eligibility — no bridge needed.';
+    document.getElementById('hc-aca').innerHTML = '<div style="color:var(--muted);font-size:13px">No ACA bridge needed.</div>';
+    document.getElementById('hc-table').innerHTML = '';
+    document.getElementById('hc-bridge').innerHTML = '';
+    return;
+  }
+
+  const aca = calcACASubsidy(HC.income, HC.retireAge);
+  const annualPremium = HC.premium * 12;
+  const annualTotal = annualPremium + HC.deductible;
+
+  // Summary stats — WA aware
+  const premiumLabel = aca.isMedicaid ? 'Apple Health (Medicaid)' : 'After WA subsidy est.';
+  const subsidyLabel = aca.isMedicaid ? 'Apple Health eligible' : 'WA APTC estimate';
+  document.getElementById('hc-stats').innerHTML =
+    statCardHTML('Medicare Gap', gapYears + ' years', 'Age ' + HC.retireAge + ' → 65', 'var(--red)') +
+    statCardHTML('Est. Subsidy/Year', aca.isMedicaid ? '$0 premium' : fmt(aca.subsidy)+'/yr', subsidyLabel, 'var(--green)') +
+    statCardHTML('Your Annual Premium', aca.isMedicaid ? '$0' : fmt(aca.yourPremium), premiumLabel, 'var(--blue)') +
+    statCardHTML('Annual Deductible', fmt(HC.deductible), '+ OOP max ' + fmt(HC.oop), 'var(--amber)');
+
+  // Gap text
+  document.getElementById('hc-gap-text').innerHTML =
+    `<strong style="color:var(--blue)">Washington State</strong> — You're retiring at <strong style="color:var(--text)">${HC.retireAge}</strong> and Medicare starts at <strong style="color:var(--text)">65</strong>, leaving a <strong style="color:var(--red)">${gapYears}-year gap</strong>. At ${fmt(HC.income)}/yr retirement income that's <strong style="color:var(--text)">${(aca.pct*100).toFixed(0)}% of the Federal Poverty Level</strong>. ${aca.isMedicaid ? '<strong style="color:var(--green)">Good news: you may qualify for Washington Apple Health (Medicaid) at $0 premium.</strong>' : 'You qualify for ACA premium tax credits on Washington Healthplanfinder.'} WA has no state income tax, which gives you flexibility to manage your MAGI for maximum subsidy.`;
+
+  // ACA detail — WA specific
+  const fplPct = (aca.pct * 100).toFixed(0);
+
+  let acaHTML = '';
+  if (aca.isMedicaid) {
+    acaHTML = `
+      <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:10px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:14px;font-weight:700;color:var(--green);margin-bottom:6px;">🍎 Washington Apple Health (Medicaid)</div>
+        <div style="font-size:13px;color:var(--dim);line-height:1.7;">${aca.medicaidNote}</div>
+      </div>
+      <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Annual income</span><span class="row-val" style="color:var(--text)">${fmt(HC.income)}</span></div>
+      <div class="row-list-item"><span style="color:var(--dim);font-size:13px">FPL %</span><span class="row-val" style="color:var(--green)">${fplPct}% FPL (≤138% = Apple Health)</span></div>
+      <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Estimated monthly premium</span><span class="row-val" style="color:var(--green)">$0</span></div>`;
+  } else {
+    const subsidyTier = aca.pct < 4.0
+      ? `${fplPct}% FPL — qualifies for WA premium tax credits. Contribution capped at ~${(aca.capPct*100).toFixed(1)}% of income.`
+      : `${fplPct}% FPL — enhanced APTCs apply. Contribution capped at 8.5% of income.`;
+    acaHTML = `
+      <div style="margin-bottom:12px;">
+        <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Annual income (MAGI)</span><span class="row-val" style="color:var(--text)">${fmt(HC.income)}</span></div>
+        <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Federal Poverty Level %</span><span class="row-val" style="color:var(--blue)">${fplPct}% FPL</span></div>
+        <div class="row-list-item"><span style="color:var(--dim);font-size:13px">WA benchmark silver premium</span><span class="row-val" style="color:var(--text)">${fmt(aca.benchmarkPremium)}/yr</span></div>
+        <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Est. annual subsidy (APTC)</span><span class="row-val" style="color:var(--green)">${fmt(aca.subsidy)}/yr</span></div>
+        <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Your net premium est.</span><span class="row-val" style="color:var(--blue)">${fmt(aca.yourPremium)}/yr · ${fmt(aca.yourPremium/12)}/mo</span></div>
+      </div>
+      <div style="background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.18);border-radius:8px;padding:12px;font-size:13px;color:var(--dim);line-height:1.6;">
+        💡 <strong style="color:var(--blue)">WA subsidy tier:</strong> ${subsidyTier}<br><br>
+        🏦 <strong style="color:var(--text)">WA no-tax advantage:</strong> Roth IRA withdrawals don't count toward WA income (no state tax) AND don't affect your federal MAGI — making Roth the ideal withdrawal vehicle to keep premiums low.<br><br>
+        🛒 <strong style="color:var(--text)">Enroll at:</strong> <span style="color:var(--blue)">wahealthplanfinder.org</span> — WA's state-run marketplace often has more plan options than the federal exchange.
+      </div>`;
+  }
+  document.getElementById('hc-aca').innerHTML = acaHTML;
+
+  // Year-by-year table
+  let tableHTML = `<thead><tr>
+    <th>Age</th><th>Year</th><th>Annual Premium</th><th>Deductible</th><th>Est. Total</th><th>Cumulative</th>
+  </tr></thead><tbody>`;
+  let cumulative = 0;
+  let totalPremiums = 0, totalDeductibles = 0, totalAll = 0;
+  const rows = [];
+  for (let i = 0; i < gapYears; i++) {
+    const age = HC.retireAge + i;
+    const yr = new Date().getFullYear() + (HC.retireAge - P.age) + i;
+    const inf = Math.pow(1 + HC.inflation/100, i);
+    // Re-calc subsidy each year as age bracket changes at 60
+    const yearAca = calcACASubsidy(HC.income, age);
+    const premium = yearAca.isMedicaid ? 0 : yearAca.yourPremium * inf;
+    const deductible = HC.deductible * inf;
+    const total = premium + deductible;
+    cumulative += total;
+    totalPremiums += premium;
+    totalDeductibles += deductible;
+    totalAll += total;
+    rows.push({ age, yr, premium, deductible, total, cumulative });
+    tableHTML += `<tr>
+      <td style="color:var(--text);font-weight:500">${age}</td>
+      <td style="color:var(--muted)">${yr}</td>
+      <td style="color:var(--blue)">${fmt(premium)}</td>
+      <td style="color:var(--amber)">${fmt(deductible)}</td>
+      <td style="color:var(--text)">${fmt(total)}</td>
+      <td style="color:var(--purple)">${fmt(cumulative)}</td>
+    </tr>`;
+  }
+  tableHTML += `</tbody>`;
+  document.getElementById('hc-table').innerHTML = tableHTML;
+
+  // Bridge summary
+  const worstCase = rows.reduce((s,r) => s + (r.premium + HC.oop * Math.pow(1+HC.inflation/100, rows.indexOf(r))), 0);
+  document.getElementById('hc-bridge').innerHTML = `
+    <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Total premium cost (${gapYears} yrs)</span><span class="row-val" style="color:var(--blue)">${fmt(totalPremiums)}</span></div>
+    <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Total deductibles (est.)</span><span class="row-val" style="color:var(--amber)">${fmt(totalDeductibles)}</span></div>
+    <div class="row-list-item" style="border-top:2px solid rgba(255,255,255,0.1);margin-top:4px;padding-top:12px;">
+      <span style="color:var(--text);font-size:14px;font-weight:600">Base scenario total</span>
+      <span class="row-val" style="color:var(--purple);font-size:16px">${fmt(totalAll)}</span>
+    </div>
+    <div class="row-list-item">
+      <span style="color:var(--dim);font-size:13px">Worst case (max OOP every year)</span>
+      <span class="row-val" style="color:var(--red)">${fmt(worstCase)}</span>
+    </div>
+    <div style="margin-top:14px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:12px;font-size:13px;color:var(--dim);line-height:1.6;">
+      ⚠️ <strong style="color:var(--amber)">Budget recommendation:</strong> Reserve <strong style="color:var(--text)">${fmt(totalAll)}</strong> in a dedicated healthcare fund at retirement, or factor <strong style="color:var(--text)">${fmt(totalAll/gapYears)}/yr</strong> into your annual withdrawal plan. Healthcare costs typically inflate at ${HC.inflation}% — faster than general inflation.
+    </div>`;
+}
+
+
+// ── Roth Conversion Ladder ─────────────────────────────────────────────────
+const RC_DEFAULT = {
+  trad: 380000, income: 144000, retIncome: 45000,
+  filing: 'married', years: 3, growth: 6.5, target: 100000
+};
+let RC = (() => { try { return JSON.parse(safeLocalGet('rp_rc') || 'null') || {...RC_DEFAULT}; } catch(e) { return {...RC_DEFAULT}; } })();
+
+function initRCFields() {
+  const map = {trad:'rc-trad', income:'rc-income', retIncome:'rc-ret-income',
+    filing:'rc-filing', years:'rc-years', growth:'rc-growth', target:'rc-target'};
+  Object.entries(map).forEach(([k,id]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = RC[k];
+  });
+}
+
+function readRCFields() {
+  RC.trad      = parseFloat(document.getElementById('rc-trad')?.value) || RC_DEFAULT.trad;
+  RC.income    = parseFloat(document.getElementById('rc-income')?.value) || RC_DEFAULT.income;
+  RC.retIncome = parseFloat(document.getElementById('rc-ret-income')?.value) || RC_DEFAULT.retIncome;
+  RC.filing    = document.getElementById('rc-filing')?.value || RC_DEFAULT.filing;
+  RC.years     = parseInt(document.getElementById('rc-years')?.value) || RC_DEFAULT.years;
+  RC.growth    = parseFloat(document.getElementById('rc-growth')?.value) || RC_DEFAULT.growth;
+  RC.target    = parseFloat(document.getElementById('rc-target')?.value) || RC_DEFAULT.target;
+  safeLocalSet('rp_rc', JSON.stringify(RC));
+}
+
+// Tax brackets 2024
+function getBrackets(filing) {
+  return filing === 'married'
+    ? [{cap:23200,rate:0.10},{cap:94300,rate:0.12},{cap:201050,rate:0.22},
+       {cap:383900,rate:0.24},{cap:487450,rate:0.32},{cap:Infinity,rate:0.35}]
+    : [{cap:11600,rate:0.10},{cap:47150,rate:0.12},{cap:100525,rate:0.22},
+       {cap:191950,rate:0.24},{cap:243725,rate:0.32},{cap:Infinity,rate:0.35}];
+}
+
+function calcTaxOn(income, filing) {
+  const brackets = getBrackets(filing);
+  let tax = 0, prev = 0;
+  for (const b of brackets) {
+    if (income <= prev) break;
+    tax += (Math.min(income, b.cap) - prev) * b.rate;
+    prev = b.cap;
+  }
+  return tax;
+}
+
+function getBracketHeadroom(income, filing) {
+  const brackets = getBrackets(filing);
+  for (const b of brackets) {
+    if (income < b.cap) return { headroom: b.cap - income, rate: b.rate, cap: b.cap };
+  }
+  return { headroom: 0, rate: 0.37, cap: Infinity };
+}
+
+function getNextBracketHeadroom(income, filing) {
+  // headroom to top of NEXT bracket (fill current + next)
+  const brackets = getBrackets(filing);
+  let passed = false;
+  for (const b of brackets) {
+    if (!passed && income < b.cap) { passed = true; continue; }
+    if (passed) return { headroom: b.cap - income, rate: b.rate };
+  }
+  return { headroom: 0, rate: 0.37 };
+}
+
+function calcStrategy(strategyFn) {
+  // Returns array of yearly rows
+  let balance = RC.trad;
+  const rows = [];
+  for (let yr = 1; yr <= RC.years; yr++) {
+    const convert = Math.max(0, Math.min(strategyFn(yr, balance), balance));
+    const taxBase = RC.income + convert;
+    const taxWithout = calcTaxOn(RC.income, RC.filing);
+    const taxWith = calcTaxOn(taxBase, RC.filing);
+    const taxCost = taxWith - taxWithout;
+    const marginalRate = convert > 0 ? taxCost / convert : 0;
+    balance = (balance - convert) * (1 + RC.growth / 100);
+    rows.push({ yr, convert, taxCost, marginalRate, balance });
+  }
+  return rows;
+}
+
+function calcNoConversion() {
+  // Project what happens if you never convert — estimate RMD taxes in retirement
+  let balance = RC.trad;
+  for (let yr = 1; yr <= RC.years; yr++) {
+    balance = balance * (1 + RC.growth / 100);
+  }
+  // At retirement, estimate first 10 years of RMD taxes
+  let rmdBalance = balance;
+  let totalRMDTax = 0;
+  for (let age = RC.filing === 'married' ? P.retirementAge : P.retirementAge; age < P.retirementAge + 10; age++) {
+    const rmdFactor = Math.max(1, 90 - age); // simplified IRS uniform table
+    const rmd = rmdBalance / rmdFactor;
+    const rmdTax = calcTaxOn(RC.retIncome + rmd, RC.filing) - calcTaxOn(RC.retIncome, RC.filing);
+    totalRMDTax += rmdTax;
+    rmdBalance -= rmd;
+    rmdBalance *= (1 + RC.growth / 100);
+  }
+  return { endBalance: balance, totalRMDTax };
+}
+
+function renderRoth() {
+  readRCFields();
+
+  const s1name = 'Fill Current Bracket';
+  const s2name = 'Max Conversion';
+  const s3name = 'Target Income';
+
+  // Strategy 1: fill to top of current bracket each year
+  const strat1 = calcStrategy((yr, bal) => {
+    const h = getBracketHeadroom(RC.income, RC.filing);
+    return h.headroom;
+  });
+
+  // Strategy 2: convert as much as possible (to top of 24% bracket for MFJ / 22% for single)
+  const maxCap = RC.filing === 'married' ? 383900 : 191950;
+  const strat2 = calcStrategy((yr, bal) => Math.max(0, maxCap - RC.income));
+
+  // Strategy 3: convert to target income
+  const strat3 = calcStrategy((yr, bal) => Math.max(0, RC.target - RC.income));
+
+  const noConv = calcNoConversion();
+
+  // Strategy summary cards
+  const totalTax1 = strat1.reduce((s,r) => s+r.taxCost, 0);
+  const totalTax2 = strat2.reduce((s,r) => s+r.taxCost, 0);
+  const totalTax3 = strat3.reduce((s,r) => s+r.taxCost, 0);
+  const totalConv1 = strat1.reduce((s,r) => s+r.convert, 0);
+  const totalConv2 = strat2.reduce((s,r) => s+r.convert, 0);
+  const totalConv3 = strat3.reduce((s,r) => s+r.convert, 0);
+
+  const h = getBracketHeadroom(RC.income, RC.filing);
+
+  document.getElementById('rc-strategy-cards').innerHTML =
+    statCardHTML(s1name, fmt(totalConv1), `${fmt(totalTax1)} total tax · ${(h.rate*100).toFixed(0)}% bracket`, 'var(--blue)') +
+    statCardHTML(s2name, fmt(totalConv2), `${fmt(totalTax2)} total tax · fills to 24%`, 'var(--purple)') +
+    statCardHTML(s3name, fmt(totalConv3), `${fmt(totalTax3)} total tax · ${fmt(RC.target)}/yr target`, 'var(--green)') +
+    statCardHTML('No Conversion RMDs', fmt(noConv.totalRMDTax), '10-yr RMD tax estimate', 'var(--red)');
+
+  // Side by side table
+  let tableHTML = `<thead><tr>
+    <th>Year</th>
+    <th style="color:var(--blue)">S1 Convert</th><th style="color:var(--blue)">S1 Tax</th>
+    <th style="color:var(--purple)">S2 Convert</th><th style="color:var(--purple)">S2 Tax</th>
+    <th style="color:var(--green)">S3 Convert</th><th style="color:var(--green)">S3 Tax</th>
+  </tr></thead><tbody>`;
+
+  for (let i = 0; i < RC.years; i++) {
+    const r1 = strat1[i], r2 = strat2[i], r3 = strat3[i];
+    tableHTML += `<tr>
+      <td style="color:var(--muted)">${r1.yr}</td>
+      <td style="color:var(--blue)">${fmt(r1.convert)}</td><td style="color:var(--blue);opacity:0.7">${fmt(r1.taxCost)}</td>
+      <td style="color:var(--purple)">${fmt(r2.convert)}</td><td style="color:var(--purple);opacity:0.7">${fmt(r2.taxCost)}</td>
+      <td style="color:var(--green)">${fmt(r3.convert)}</td><td style="color:var(--green);opacity:0.7">${fmt(r3.taxCost)}</td>
+    </tr>`;
+  }
+  // Totals row
+  tableHTML += `<tr style="border-top:2px solid rgba(255,255,255,0.12);font-weight:700;">
+    <td style="color:var(--text)">Total</td>
+    <td style="color:var(--blue)">${fmt(totalConv1)}</td><td style="color:var(--blue);opacity:0.7">${fmt(totalTax1)}</td>
+    <td style="color:var(--purple)">${fmt(totalConv2)}</td><td style="color:var(--purple);opacity:0.7">${fmt(totalTax2)}</td>
+    <td style="color:var(--green)">${fmt(totalConv3)}</td><td style="color:var(--green);opacity:0.7">${fmt(totalTax3)}</td>
+  </tr></tbody>`;
+  document.getElementById('rc-table').innerHTML = tableHTML;
+
+  // 10-year tax savings vs not converting
+  const savings1 = noConv.totalRMDTax - totalTax1;
+  const savings2 = noConv.totalRMDTax - totalTax2;
+  const savings3 = noConv.totalRMDTax - totalTax3;
+
+  document.getElementById('rc-savings').innerHTML = `
+    <div style="margin-bottom:14px;font-size:13px;color:var(--dim);line-height:1.6;">
+      Without converting, your Traditional IRA balance of <strong style="color:var(--text)">${fmt(RC.trad)}</strong> grows to an estimated <strong style="color:var(--text)">${fmt(noConv.endBalance)}</strong> by retirement — triggering mandatory RMDs at 73. The 10-year RMD tax estimate is <strong style="color:var(--red)">${fmt(noConv.totalRMDTax)}</strong>. Converting now at lower rates saves:
+    </div>
+    ${[
+      {label: s1name, savings: savings1, tax: totalTax1, color: 'var(--blue)'},
+      {label: s2name, savings: savings2, tax: totalTax2, color: 'var(--purple)'},
+      {label: s3name, savings: savings3, tax: totalTax3, color: 'var(--green)'},
+    ].map(({label, savings, tax, color}) => `
+      <div style="background:rgba(255,255,255,0.03);border:1px solid ${savings>0?'rgba(52,211,153,0.2)':'rgba(248,113,113,0.2)'};border-radius:10px;padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:13px;font-weight:600;color:${color}">${label}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:${savings>0?'var(--green)':'var(--red)'}">
+            ${savings>0?'Save ':'Cost '}${fmt(Math.abs(savings))}
+          </span>
+        </div>
+        <div style="font-size:12px;color:var(--muted)">Pay ${fmt(tax)} now in conversion tax · avoid est. ${fmt(noConv.totalRMDTax)} in RMD tax later</div>
+      </div>`).join('')}
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6;">* RMD estimate uses simplified IRS uniform lifetime table. Actual RMDs depend on year-end balances and IRS tables in effect at the time. Washington State has no income tax so conversion tax is federal only.</div>`;
+
+  // Tax cost breakdown per strategy
+  document.getElementById('rc-taxcost').innerHTML = [
+    {label: s1name, rows: strat1, color: 'var(--blue)'},
+    {label: s2name, rows: strat2, color: 'var(--purple)'},
+    {label: s3name, rows: strat3, color: 'var(--green)'},
+  ].map(({label, rows, color}) => {
+    const totalConv = rows.reduce((s,r)=>s+r.convert,0);
+    const totalTax = rows.reduce((s,r)=>s+r.taxCost,0);
+    const avgRate = totalConv > 0 ? totalTax/totalConv : 0;
+    return `
+      <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
+        <div style="font-size:13px;font-weight:700;color:${color};margin-bottom:8px;">${label}</div>
+        <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Total converted</span><span class="row-val" style="color:${color}">${fmt(totalConv)}</span></div>
+        <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Total tax cost</span><span class="row-val" style="color:var(--amber)">${fmt(totalTax)}</span></div>
+        <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Effective conversion rate</span><span class="row-val" style="color:var(--text)">${fmtPct(avgRate*100)}</span></div>
+        <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Remaining Traditional balance</span><span class="row-val" style="color:var(--muted)">${fmt(rows[rows.length-1]?.balance||0)}</span></div>
+      </div>`;
+  }).join('');
+}
+
+
+// ── Withdrawal Sequencing ──────────────────────────────────────────────────
+const WD_DEFAULT = {
+  spend: 78000, ss: 26400, ssAge: 67, retAge: 55,
+  taxable: 150000, trad: 380000, roth: 120000, growth: 6.5
+};
+let WD = (() => { try { return JSON.parse(safeLocalGet('rp_wd') || 'null') || {...WD_DEFAULT}; } catch(e) { return {...WD_DEFAULT}; } })();
+
+function initWDFields() {
+  const map = {spend:'wd-spend',ss:'wd-ss',ssAge:'wd-ss-age',retAge:'wd-ret-age',
+    taxable:'wd-taxable',trad:'wd-trad',roth:'wd-roth',growth:'wd-growth'};
+  Object.entries(map).forEach(([k,id]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = WD[k];
+  });
+}
+
+function readWDFields() {
+  WD.spend   = parseFloat(document.getElementById('wd-spend')?.value)   || WD_DEFAULT.spend;
+  WD.ss      = parseFloat(document.getElementById('wd-ss')?.value)      || WD_DEFAULT.ss;
+  WD.ssAge   = parseFloat(document.getElementById('wd-ss-age')?.value)  || WD_DEFAULT.ssAge;
+  WD.retAge  = parseFloat(document.getElementById('wd-ret-age')?.value) || WD_DEFAULT.retAge;
+  WD.taxable = parseFloat(document.getElementById('wd-taxable')?.value) || WD_DEFAULT.taxable;
+  WD.trad    = parseFloat(document.getElementById('wd-trad')?.value)    || WD_DEFAULT.trad;
+  WD.roth    = parseFloat(document.getElementById('wd-roth')?.value)    || WD_DEFAULT.roth;
+  WD.growth  = parseFloat(document.getElementById('wd-growth')?.value)  || WD_DEFAULT.growth;
+  safeLocalSet('rp_wd', JSON.stringify(WD));
+}
+
+function renderWithdrawal() {
+  readWDFields();
+  const filing = P.filingStatus || 'married';
+  const gapYears = Math.max(0, WD.ssAge - WD.retAge);
+  const postSSYears = Math.max(0, 20 - gapYears);
+  const g = WD.growth / 100;
+
+  // ── Phase calculations ──
+  // Phase 1: pre-SS — need full spend from portfolio
+  const phase1Need = WD.spend;
+  // Phase 2: post-SS — SS covers part, portfolio covers rest
+  const taxableSS = Math.min(WD.ss * 0.85, WD.ss); // up to 85% taxable
+  const phase2Need = Math.max(0, WD.spend - WD.ss);
+
+  // ── Tax calc helpers ──
+  function taxOn(income) { return calcTaxOn(Math.max(0, income), filing); }
+
+  // ── Phase 1 sequence: Taxable → Trad (fill bracket) → Roth (top up) ──
+  // Keep income low to maximise ACA subsidy (WA: target <400% FPL ~$60k)
+  const acaTarget = filing === 'married' ? 60240 : 30120; // ~400% FPL 2024
+  const stdDeduction = filing === 'married' ? 29200 : 14600;
+
+  // How much taxable/trad to pull to stay under ACA threshold
+  const phase1TaxableFromPortfolio = phase1Need;
+  // Optimal: pull from taxable first (cap gains rates), then trad up to ACA limit, then Roth
+  const phase1CapGainsIncome = Math.min(WD.taxable > 0 ? phase1Need * 0.6 : 0, phase1Need);
+  const phase1TradIdeal = Math.min(Math.max(0, acaTarget - stdDeduction), phase1Need - phase1CapGainsIncome);
+  const phase1RothTopUp = Math.max(0, phase1Need - phase1CapGainsIncome - phase1TradIdeal);
+
+  const phase1GrossIncome = phase1TradIdeal; // cap gains taxed separately at 0% if income low
+  const phase1Tax = taxOn(Math.max(0, phase1GrossIncome - stdDeduction));
+
+  // Phase 2: SS income + portfolio
+  const phase2SSIncome = WD.ss;
+  const phase2TradIdeal = Math.min(phase2Need * 0.7, WD.trad > 0 ? phase2Need : 0);
+  const phase2RothTopUp = Math.max(0, phase2Need - phase2TradIdeal);
+  const phase2TaxableIncome = phase2TradIdeal + taxableSS;
+  const phase2Tax = taxOn(Math.max(0, phase2TaxableIncome - stdDeduction));
+
+  // Phase cards
+  document.getElementById('wd-phase-cards').innerHTML =
+    statCardHTML('Phase 1 Duration', gapYears + ' years', 'Retirement to SS at ' + WD.ssAge, 'var(--amber)') +
+    statCardHTML('Phase 1 Annual Need', fmt(phase1Need), 'Full spend from portfolio', 'var(--red)') +
+    statCardHTML('Phase 2 Portfolio Need', fmt(phase2Need), fmt(WD.ss) + '/yr SS offsets rest', 'var(--green)') +
+    statCardHTML('Phase 2 Annual Tax Est.', fmt(phase2Tax), 'On trad + 85% SS income', 'var(--purple)');
+
+  // Phase 1 detail
+  document.getElementById('wd-phase1').innerHTML = `
+    <div style="font-size:12px;color:var(--amber);font-weight:700;margin-bottom:10px;letter-spacing:0.05em;">AGE ${WD.retAge} – ${WD.ssAge} · ${gapYears} YEARS</div>
+    ${[
+      {label:'Annual spending need', val: fmt(phase1Need), color:'var(--text)'},
+      {label:'From taxable (cap gains)', val: fmt(phase1CapGainsIncome), color:'var(--blue)'},
+      {label:'From Traditional IRA', val: fmt(phase1TradIdeal), color:'var(--purple)'},
+      {label:'From Roth (top-up)', val: fmt(phase1RothTopUp), color:'var(--green)'},
+      {label:'Est. annual tax', val: fmt(phase1Tax), color:'var(--amber)'},
+      {label:'ACA income target', val: fmt(acaTarget), color:'var(--dim)'},
+    ].map(({label,val,color}) => `<div class="row-list-item"><span style="color:var(--dim);font-size:12px">${label}</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:${color}">${val}</span></div>`).join('')}
+    <div style="margin-top:10px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--dim);line-height:1.6;">
+      💡 Keep Traditional withdrawals under <strong style="color:var(--amber)">${fmt(acaTarget)}</strong> MAGI to preserve ACA subsidies. Use Roth to fill the gap — it doesn't count toward MAGI.
+    </div>`;
+
+  // Phase 2 detail
+  document.getElementById('wd-phase2').innerHTML = `
+    <div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:10px;letter-spacing:0.05em;">AGE ${WD.ssAge}+ · ONGOING</div>
+    ${[
+      {label:'Annual spending need', val: fmt(WD.spend), color:'var(--text)'},
+      {label:'Social Security income', val: fmt(WD.ss), color:'var(--green)'},
+      {label:'Portfolio gap to fill', val: fmt(phase2Need), color:'var(--blue)'},
+      {label:'From Traditional IRA', val: fmt(phase2TradIdeal), color:'var(--purple)'},
+      {label:'From Roth (top-up)', val: fmt(phase2RothTopUp), color:'var(--green)'},
+      {label:'Est. annual tax', val: fmt(phase2Tax), color:'var(--amber)'},
+    ].map(({label,val,color}) => `<div class="row-list-item"><span style="color:var(--dim);font-size:12px">${label}</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:${color}">${val}</span></div>`).join('')}
+    <div style="margin-top:10px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--dim);line-height:1.6;">
+      💡 Once SS starts, up to 85% is taxable. Pull more from Roth to keep combined income below the SS taxation threshold (<strong style="color:var(--green)">${filing==='married'?'$44,000':'$34,000'}</strong> for ${filing==='married'?'MFJ':'single'}).
+    </div>`;
+
+  // Sequence strategy
+  const seqSteps = [
+    {phase:'Phase 1 (pre-SS)', order:1, account:'Taxable Brokerage', color:'var(--blue)',
+      reason:`Draw first. Long-term cap gains taxed at 0% if income stays low. Depleting taxable accounts early reduces future RMDs and simplifies estate.`},
+    {phase:'Phase 1 (pre-SS)', order:2, account:'Traditional IRA / 401k', color:'var(--purple)',
+      reason:`Draw up to your ACA income target (${fmt(acaTarget)} MAGI). Keeps subsidy intact while converting pre-tax dollars at low early-retirement rates.`},
+    {phase:'Phase 1 (pre-SS)', order:3, account:'Roth IRA', color:'var(--green)',
+      reason:`Top up to cover remaining spend. Tax-free, no MAGI impact. Preserve as long as possible — this is your most tax-efficient money.`},
+    {phase:'Phase 2 (post-SS)', order:1, account:'Social Security', color:'var(--amber)',
+      reason:`Let this cover baseline spend. Up to 85% is federally taxable once combined income exceeds threshold.`},
+    {phase:'Phase 2 (post-SS)', order:2, account:'Traditional IRA / 401k', color:'var(--purple)',
+      reason:`Fill the gap between SS and spending need. Watch combined income vs SS taxation threshold.`},
+    {phase:'Phase 2 (post-SS)', order:3, account:'Roth IRA', color:'var(--green)',
+      reason:`Reserve for large expenses, healthcare spikes, or keeping taxable income low in high-spend years. No RMDs — let it grow.`},
+  ];
+
+  document.getElementById('wd-sequence').innerHTML = seqSteps.map(s => `
+    <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+      <div style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:${s.color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;">${s.order}</div>
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+          <span style="font-size:13px;font-weight:600;color:${s.color}">${s.account}</span>
+          <span style="font-size:10px;color:var(--muted);background:rgba(255,255,255,0.06);padding:2px 7px;border-radius:10px;">${s.phase}</span>
+        </div>
+        <div style="font-size:12px;color:var(--dim);line-height:1.6;">${s.reason}</div>
+      </div>
+    </div>`).join('');
+
+  // Year-by-year drawdown table
+  let taxBal = WD.taxable, tradBal = WD.trad, rothBal = WD.roth;
+  let tableHTML = `<thead><tr>
+    <th>Year</th><th>Age</th><th>Phase</th>
+    <th style="color:var(--blue)">Taxable</th>
+    <th style="color:var(--purple)">Traditional</th>
+    <th style="color:var(--green)">Roth</th>
+    <th style="color:var(--amber)">Tax</th>
+    <th>Total</th>
+  </tr></thead><tbody>`;
+
+  let totalLifetimeTax = 0;
+  for (let yr = 1; yr <= 20; yr++) {
+    const age = WD.retAge + yr - 1;
+    const isPreSS = age < WD.ssAge;
+    const need = isPreSS ? phase1Need : phase2Need;
+    const ssIncome = isPreSS ? 0 : WD.ss;
+
+    // Sequence withdrawals
+    let remaining = need;
+    let fromTaxable = 0, fromTrad = 0, fromRoth = 0;
+
+    // Phase 1: taxable first, then trad up to ACA limit, then roth
+    // Phase 2: trad first, then roth
+    if (isPreSS) {
+      fromTaxable = Math.min(taxBal, remaining * 0.6);
+      remaining -= fromTaxable;
+      fromTrad = Math.min(tradBal, Math.min(remaining, Math.max(0, acaTarget - stdDeduction)));
+      remaining -= fromTrad;
+      fromRoth = Math.min(rothBal, remaining);
+    } else {
+      fromTrad = Math.min(tradBal, Math.min(remaining * 0.7, tradBal));
+      remaining -= fromTrad;
+      fromRoth = Math.min(rothBal, remaining);
+    }
+
+    const grossIncome = fromTrad + (ssIncome * 0.85);
+    const tax = taxOn(Math.max(0, grossIncome - stdDeduction));
+    totalLifetimeTax += tax;
+
+    // Update balances — grow remaining balance, subtract withdrawals
+    taxBal  = Math.max(0, (taxBal  - fromTaxable) * (1 + g));
+    tradBal = Math.max(0, (tradBal - fromTrad)    * (1 + g));
+    rothBal = Math.max(0, (rothBal - fromRoth)    * (1 + g));
+
+    const total = taxBal + tradBal + rothBal;
+    const phaseLabel = isPreSS ? 'Pre-SS' : 'Post-SS';
+    const phaseColor = isPreSS ? 'var(--amber)' : 'var(--green)';
+
+    tableHTML += `<tr${age === WD.ssAge ? ' style="border-top:2px solid rgba(52,211,153,0.3)"' : ''}>
+      <td style="color:var(--muted)">${yr}</td>
+      <td style="color:var(--text);font-weight:500">${age}</td>
+      <td style="color:${phaseColor};font-size:11px;font-weight:700">${phaseLabel}</td>
+      <td style="color:var(--blue)">${taxBal > 1000 ? fmt(taxBal) : '—'}</td>
+      <td style="color:var(--purple)">${tradBal > 1000 ? fmt(tradBal) : '—'}</td>
+      <td style="color:var(--green)">${rothBal > 1000 ? fmt(rothBal) : '—'}</td>
+      <td style="color:var(--amber)">${fmt(tax)}</td>
+      <td style="color:var(--text);font-weight:600">${fmt(total)}</td>
+    </tr>`;
+  }
+  tableHTML += `</tbody>`;
+  document.getElementById('wd-table').innerHTML = tableHTML;
+
+  // Tax impact summary
+  document.getElementById('wd-tax').innerHTML = `
+    <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Est. Phase 1 annual tax</span><span class="row-val" style="color:var(--amber)">${fmt(phase1Tax)}</span></div>
+    <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Est. Phase 2 annual tax</span><span class="row-val" style="color:var(--amber)">${fmt(phase2Tax)}</span></div>
+    <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Est. 20-year lifetime tax</span><span class="row-val" style="color:var(--red)">${fmt(totalLifetimeTax)}</span></div>
+    <div class="row-list-item"><span style="color:var(--dim);font-size:13px">Standard deduction (${filing})</span><span class="row-val" style="color:var(--muted)">${fmt(filing==='married'?29200:14600)}/yr</span></div>
+    <div style="margin-top:12px;background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.18);border-radius:8px;padding:12px;font-size:13px;color:var(--dim);line-height:1.6;">
+      💡 <strong style="color:var(--blue)">WA advantage:</strong> No state income tax means every dollar of tax reduction goes straight to your pocket. Keeping Traditional withdrawals below the standard deduction (${fmt(filing==='married'?29200:14600)}) makes them effectively tax-free federally too.
+    </div>`;
+}
+
+
+// ── Expense Budget Planner ─────────────────────────────────────────────────
+const BUDGET_GROUPS = {
+  Housing:   { color:'var(--blue)',   icon:'🏠' },
+  Food:      { color:'var(--green)',  icon:'🍽️' },
+  Transport: { color:'var(--purple)', icon:'🚗' },
+  Healthcare:{ color:'var(--red)',    icon:'🏥' },
+  Lifestyle: { color:'var(--amber)',  icon:'🎭' },
+  Travel:    { color:'#06b6d4',       icon:'✈️' },
+  Family:    { color:'#ec4899',       icon:'👨‍👩‍👧' },
+  Financial: { color:'#84cc16',       icon:'💼' },
+  Other:     { color:'var(--muted)',  icon:'📦' },
+};
+
+const DEFAULT_CATEGORIES = [
+  // Housing
+  {id:1, group:'Housing',    name:'Mortgage / Rent',         today:2800, retirement:0},
+  {id:2, group:'Housing',    name:'Property Tax',            today:400,  retirement:400},
+  {id:3, group:'Housing',    name:'Home Insurance',          today:150,  retirement:150},
+  {id:4, group:'Housing',    name:'Utilities',               today:250,  retirement:250},
+  {id:5, group:'Housing',    name:'Home Maintenance',        today:200,  retirement:300},
+  // Food
+  {id:6, group:'Food',       name:'Groceries',               today:600,  retirement:500},
+  {id:7, group:'Food',       name:'Dining Out',              today:400,  retirement:600},
+  // Transport
+  {id:8, group:'Transport',  name:'Car Payment',             today:500,  retirement:0},
+  {id:9, group:'Transport',  name:'Gas & Fuel',              today:200,  retirement:150},
+  {id:10,group:'Transport',  name:'Car Insurance',           today:150,  retirement:120},
+  {id:11,group:'Transport',  name:'Rideshare / Transit',     today:50,   retirement:100},
+  // Healthcare
+  {id:12,group:'Healthcare', name:'Health Insurance Premium',today:0,    retirement:700},
+  {id:13,group:'Healthcare', name:'Out-of-Pocket / Rx',     today:200,  retirement:400},
+  {id:14,group:'Healthcare', name:'Dental & Vision',        today:100,  retirement:150},
+  // Lifestyle
+  {id:15,group:'Lifestyle',  name:'Subscriptions & Streaming',today:100,retirement:100},
+  {id:16,group:'Lifestyle',  name:'Hobbies & Recreation',   today:300,  retirement:500},
+  {id:17,group:'Lifestyle',  name:'Clothing',               today:200,  retirement:150},
+  {id:18,group:'Lifestyle',  name:'Personal Care',          today:150,  retirement:150},
+  // Travel
+  {id:19,group:'Travel',     name:'Vacations & Travel',     today:500,  retirement:1000},
+  {id:20,group:'Travel',     name:'Local Day Trips',        today:100,  retirement:200},
+  // Family
+  {id:21,group:'Family',     name:'Gifts & Celebrations',   today:200,  retirement:200},
+  {id:22,group:'Family',     name:'Charitable Giving',      today:200,  retirement:300},
+  // Financial
+  {id:23,group:'Financial',  name:'Life / Umbrella Insurance',today:100,retirement:50},
+  {id:24,group:'Financial',  name:'Misc / Buffer',          today:300,  retirement:300},
+];
+
+let budgetView = 'monthly';
+let budgetCategories = (() => {
+  try {
+    const saved = safeLocalGet('rp_budget');
+    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES.map(c=>({...c}));
+  } catch(e) { return DEFAULT_CATEGORIES.map(c=>({...c})); }
+})();
+let nextBudgetId = Math.max(...budgetCategories.map(c=>c.id)) + 1;
+
+function saveBudget() { safeLocalSet('rp_budget', JSON.stringify(budgetCategories)); }
+
+function setBudgetView(v) {
+  budgetView = v;
+  const mb = document.getElementById('view-monthly');
+  const ab = document.getElementById('view-annual');
+  if (mb && ab) {
+    mb.style.background = v==='monthly' ? 'var(--blue)' : 'rgba(255,255,255,0.06)';
+    mb.style.border = v==='monthly' ? 'none' : '1px solid var(--border)';
+    mb.style.color = v==='monthly' ? '#fff' : 'var(--muted)';
+    ab.style.background = v==='annual' ? 'var(--blue)' : 'rgba(255,255,255,0.06)';
+    ab.style.border = v==='annual' ? 'none' : '1px solid var(--border)';
+    ab.style.color = v==='annual' ? '#fff' : 'var(--muted)';
+  }
+  renderBudget();
+}
+
+function addBudgetCategory() {
+  const name = document.getElementById('budget-new-name')?.value.trim();
+  const group = document.getElementById('budget-new-group')?.value;
+  if (!name) { alert('Please enter a category name.'); return; }
+  budgetCategories.push({id: nextBudgetId++, group, name, today:0, retirement:0});
+  saveBudget();
+  document.getElementById('budget-new-name').value = '';
+  renderBudget();
+}
+
+function deleteBudgetCategory(id) {
+  budgetCategories = budgetCategories.filter(c => c.id !== id);
+  saveBudget();
+  renderBudget();
+}
+
+function updateBudgetVal(id, field, val) {
+  const cat = budgetCategories.find(c => c.id === id);
+  if (cat) cat[field] = parseFloat(val) || 0;
+  saveBudget();
+  renderBudget();
+}
+
+function renderBudget() {
+  const mult = budgetView === 'annual' ? 12 : 1;
+  const label = budgetView === 'annual' ? '/yr' : '/mo';
+  const inflation = parseFloat(document.getElementById('budget-inflation')?.value) || 3.0;
+  const years = parseInt(document.getElementById('budget-years')?.value) || 3;
+  const inflFactor = Math.pow(1 + inflation/100, years);
+
+  const totalToday = budgetCategories.reduce((s,c) => s + c.today, 0) * mult;
+  const totalRetirement = budgetCategories.reduce((s,c) => s + c.retirement, 0) * mult;
+  const totalRetInflated = totalRetirement * inflFactor;
+  const gap = totalRetirement - totalToday;
+
+  // Summary stats
+  document.getElementById('budget-stats').innerHTML =
+    statCardHTML("Today's Spending", fmt(totalToday) + label, 'All categories', 'var(--blue)') +
+    statCardHTML("Retirement Budget", fmt(totalRetirement) + label, "In today's dollars", "var(--purple)") +
+    statCardHTML('Inflation-Adjusted', fmt(totalRetInflated) + label, `At ${inflation}% over ${years} yrs`, 'var(--amber)') +
+    statCardHTML(gap >= 0 ? 'Budget Increase' : 'Budget Reduction', fmt(Math.abs(gap)) + label, gap >= 0 ? 'Retirement costs more' : 'Retirement costs less', gap >= 0 ? 'var(--red)' : 'var(--green)');
+
+  // Group categories
+  const groups = {};
+  budgetCategories.forEach(c => {
+    if (!groups[c.group]) groups[c.group] = [];
+    groups[c.group].push(c);
+  });
+
+  // Category table
+  let catHTML = '';
+  // Header
+  catHTML += `<div style="display:grid;grid-template-columns:1fr 120px 120px 100px 32px;gap:8px;padding:8px 0;border-bottom:2px solid rgba(255,255,255,0.1);margin-bottom:4px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);">Category</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);text-align:right;">Today${label}</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--purple);text-align:right;">Retirement${label}</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--amber);text-align:right;">Δ Change</div>
+    <div></div>
+  </div>`;
+
+  Object.entries(groups).forEach(([group, cats]) => {
+    const meta = BUDGET_GROUPS[group] || BUDGET_GROUPS.Other;
+    const groupToday = cats.reduce((s,c) => s+c.today,0) * mult;
+    const groupRet   = cats.reduce((s,c) => s+c.retirement,0) * mult;
+    const groupDiff  = groupRet - groupToday;
+
+    // Group header row
+    catHTML += `<div style="display:grid;grid-template-columns:1fr 120px 120px 100px 32px;gap:8px;padding:10px 0 6px;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;">
+      <div style="font-size:12px;font-weight:700;color:${meta.color}">${meta.icon} ${group}</div>
+      <div style="font-size:12px;font-weight:600;color:var(--dim);text-align:right;font-family:'DM Mono',monospace">${fmt(groupToday)}</div>
+      <div style="font-size:12px;font-weight:600;color:${meta.color};text-align:right;font-family:'DM Mono',monospace">${fmt(groupRet)}</div>
+      <div style="font-size:12px;font-weight:600;text-align:right;font-family:'DM Mono',monospace;color:${groupDiff>0?'var(--red)':groupDiff<0?'var(--green)':'var(--muted)'}">${groupDiff>=0?'+':''}${fmt(groupDiff)}</div>
+      <div></div>
+    </div>`;
+
+    cats.forEach(c => {
+      const todayVal = c.today * mult;
+      const retVal   = c.retirement * mult;
+      const diff     = retVal - todayVal;
+      catHTML += `<div style="display:grid;grid-template-columns:1fr 120px 120px 100px 32px;gap:8px;align-items:center;padding:5px 0 5px 12px;">
+        <div style="font-size:13px;color:var(--dim)">${c.name}</div>
+        <div style="text-align:right;">
+          <input type="number" value="${c.today}" min="0" oninput="updateBudgetVal(${c.id},'today',this.value)"
+            style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none;text-align:right;" oninput="updateBudgetVal(${c.id},'today',this.value*(${mult===12?'1/12':'1'}))">
+        </div>
+        <div style="text-align:right;">
+          <input type="number" value="${c.retirement}" min="0"
+            style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(167,139,250,0.3);border-radius:6px;padding:5px 8px;color:var(--purple);font-size:13px;font-family:'DM Mono',monospace;outline:none;text-align:right;" oninput="updateBudgetVal(${c.id},'retirement',this.value*(${mult===12?'1/12':'1'}))">
+        </div>
+        <div style="font-size:12px;font-family:'DM Mono',monospace;text-align:right;color:${diff>0?'var(--red)':diff<0?'var(--green)':'var(--muted)'}">
+          ${diff===0?'—':(diff>0?'+':'')+fmt(diff)}
+        </div>
+        <button onclick="deleteBudgetCategory(${c.id})" style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);border-radius:5px;padding:3px 6px;color:var(--red);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+      </div>`;
+    });
+  });
+
+  // Totals row
+  catHTML += `<div style="display:grid;grid-template-columns:1fr 120px 120px 100px 32px;gap:8px;padding:12px 0 4px;border-top:2px solid rgba(255,255,255,0.12);margin-top:8px;">
+    <div style="font-size:13px;font-weight:700;color:var(--text)">TOTAL</div>
+    <div style="font-size:13px;font-weight:700;color:var(--text);text-align:right;font-family:'DM Mono',monospace">${fmt(totalToday)}</div>
+    <div style="font-size:13px;font-weight:700;color:var(--purple);text-align:right;font-family:'DM Mono',monospace">${fmt(totalRetirement)}</div>
+    <div style="font-size:13px;font-weight:700;text-align:right;font-family:'DM Mono',monospace;color:${gap>=0?'var(--red)':'var(--green)'}">${gap>=0?'+':''}${fmt(gap)}</div>
+    <div></div>
+  </div>`;
+
+  document.getElementById('budget-categories').innerHTML = catHTML;
+
+  // Inflation projection bars
+  const projYears = [0, 1, 2, 3, 5, 7, 10];
+  const maxVal = totalRetirement * Math.pow(1 + inflation/100, 10) * 1.1;
+  let projHTML = `<div style="display:flex;align-items:flex-end;gap:10px;height:100px;margin-bottom:10px;">`;
+  projYears.forEach(yr => {
+    const val = totalRetirement * Math.pow(1 + inflation/100, yr);
+    const h = (val / maxVal) * 100;
+    const isTarget = yr === years;
+    projHTML += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div style="font-size:10px;color:${isTarget?'var(--amber)':'var(--muted)'};font-family:'DM Mono',monospace;font-weight:${isTarget?700:400}">${fmt(val)}</div>
+      <div style="width:100%;height:${h}%;background:${isTarget?'var(--amber)':'var(--purple)'};border-radius:4px 4px 0 0;opacity:${isTarget?1:0.5};min-height:4px;transition:height 0.4s;"></div>
+      <div style="font-size:11px;color:${isTarget?'var(--amber)':'var(--muted)'}">Yr ${yr}</div>
+    </div>`;
+  });
+  projHTML += `</div><div style="font-size:12px;color:var(--muted)">Retirement budget in today's dollars: ${fmt(totalRetirement)}${label} · Highlighted bar = your retirement year (Yr ${years})</div>`;
+  document.getElementById('budget-projection').innerHTML = projHTML;
+
+  // Gap analysis
+  const biggestIncreases = [...budgetCategories]
+    .map(c => ({name:c.name, group:c.group, diff: (c.retirement-c.today)*mult}))
+    .filter(c => c.diff > 0)
+    .sort((a,b) => b.diff-a.diff)
+    .slice(0, 5);
+  const biggestDecreases = [...budgetCategories]
+    .map(c => ({name:c.name, group:c.group, diff: (c.retirement-c.today)*mult}))
+    .filter(c => c.diff < 0)
+    .sort((a,b) => a.diff-b.diff)
+    .slice(0, 5);
+
+  let gapHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px;letter-spacing:0.05em;">▲ BIGGEST INCREASES</div>
+        ${biggestIncreases.map(c => `
+          <div class="row-list-item">
+            <span style="color:var(--dim);font-size:12px">${c.name}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--red);font-weight:600">+${fmt(c.diff)}</span>
+          </div>`).join('') || '<div style="color:var(--muted);font-size:13px">None</div>'}
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px;letter-spacing:0.05em;">▼ BIGGEST REDUCTIONS</div>
+        ${biggestDecreases.map(c => `
+          <div class="row-list-item">
+            <span style="color:var(--dim);font-size:12px">${c.name}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--green);font-weight:600">${fmt(c.diff)}</span>
+          </div>`).join('') || '<div style="color:var(--muted);font-size:13px">None</div>'}
+      </div>
+    </div>
+    <div style="background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.18);border-radius:8px;padding:12px;font-size:13px;color:var(--dim);line-height:1.7;">
+      Your retirement budget of <strong style="color:var(--purple)">${fmt(totalRetirement)}/mo</strong> in today's dollars inflates to <strong style="color:var(--amber)">${fmt(totalRetInflated)}/mo</strong> at retirement in ${years} year${years!==1?'s':''}. 
+      ${gap > 0
+        ? `That's <strong style="color:var(--red)">${fmt(gap)}/mo more</strong> than today — primarily driven by healthcare and lifestyle increases.`
+        : `That's <strong style="color:var(--green)">${fmt(Math.abs(gap))}/mo less</strong> than today — mainly from eliminating mortgage and reduced commuting costs.`}
+      <br><br>💡 Update your <strong style="color:var(--text)">Runway tab</strong> monthly expenses to <strong style="color:var(--amber)">${fmt(totalRetInflated/1)}</strong> to keep your projections grounded in this budget.
+    </div>`;
+  document.getElementById('budget-gap').innerHTML = gapHTML;
+}
+
+function renderForecast(c) {
+  const rows = Math.min(c.ytr + 10, 22);
+  let html = `<thead><tr>
+    <th>Yr</th><th>Age</th><th>Savings</th><th>Withdrawal</th><th>SS Income</th><th>Status</th>
+  </tr></thead><tbody>`;
+  for (let yr=1; yr<=rows; yr++) {
+    const savings = calcProjected(yr*12);
+    const isRet = yr===c.ytr;
+    const isPost = yr>c.ytr;
+    const withdrawal = isPost ? fmt(P.monthlyExpenses*12*Math.pow(1+P.inflationRate/100,yr)) : '—';
+    const ssAge = P.socialSecurityAge - P.age;
+    const ss = yr>=ssAge ? fmt(P.socialSecurityMonthly*12) : '—';
+    const statusColor = isRet?'var(--amber)':isPost?'var(--green)':'var(--blue)';
+    const statusText = isRet?'Retire 🎯':isPost?'Retired':'Accumulating';
+    html += `<tr${isRet?' class="retire-row"':''}>
+      <td style="color:var(--muted)">${yr}</td>
+      <td style="color:${isRet?'var(--amber)':'var(--text)'};font-weight:${isRet?700:400}">${P.age+yr}</td>
+      <td style="color:var(--blue)">${fmt(savings)}</td>
+      <td style="color:${isPost?'var(--red)':'var(--muted)'}">${withdrawal}</td>
+      <td style="color:${ss!=='—'?'var(--green)':'var(--muted)'}">${ss}</td>
+      <td style="color:${statusColor};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">${statusText}</td>
+    </tr>`;
+  }
+  html += '</tbody>';
+  document.getElementById('forecast-table').innerHTML = html;
+}
+
+function renderAdvisorBar() {
+  const hasKey = !!getApiKey();
+  document.getElementById('key-bar-container').innerHTML = hasKey
+    ? `<div class="key-bar"><span class="key-bar-text">✓ API key saved on this device</span><button class="key-reset" onclick="resetApiKey()">Change key</button></div>`
+    : `<div class="insight" style="margin-bottom:14px"><div class="insight-title">⚠️ No API Key</div><div class="insight-body">Enter your Anthropic API key to use the AI Advisor. <a href="#" onclick="document.getElementById('api-modal').style.display = 'flex'" style="color:var(--blue)">Add key →</a></div></div>`;
+}
+
+// ── Chat ───────────────────────────────────────────────────────────────────
+function initChat() {
+  addMessage('assistant', `Hi — I'm your retirement planning advisor. I have full visibility into your numbers. Ask me anything: "Am I on track?", "How should I sequence withdrawals?", "What's my Roth conversion opportunity?" — let's make the next 1–3 years count.`);
+}
+
+function addMessage(role, text) {
+  chatHistory.push({role, text});
+  const msgs = document.getElementById('chat-messages');
+  if (!msgs) return;
+  const div = document.createElement('div');
+  div.className = 'msg-row ' + role;
+  div.innerHTML = `<div class="msg-bubble ${role}">${text.replace(/\n/g,'<br>')}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function setInput(text) {
+  const el = document.getElementById('chat-input');
+  if (el) { el.value = text; el.focus(); }
+}
+
+function handleEnter(e) {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const btn = document.getElementById('send-btn');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+
+  const key = getApiKey();
+  if (!key) {
+    const rm = document.getElementById('api-modal'); rm.classList.remove('hidden'); rm.style.removeProperty('display');
+    return;
+  }
+
+  input.value = '';
+  isLoading = true;
+  btn.disabled = true;
+  addMessage('user', text);
+
+  // Typing indicator
+  const msgs = document.getElementById('chat-messages');
+  const typing = document.createElement('div');
+  typing.id = 'typing-indicator';
+  typing.className = 'msg-row assistant';
+  typing.innerHTML = `<div class="msg-bubble assistant"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  msgs.appendChild(typing);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const c = getCalcs();
+  const holdings = loadHoldings();
+  const holdingsSummary = holdings.length > 0
+    ? holdings.map(h => `${h.name} (${TYPE_META[h.type].label}, ${h.account}): ${fmt(h.value)}`).join('\n')
+    : 'No individual holdings entered yet.';
+
+  const system = `You are a retirement planning advisor. Here is the user's complete financial profile:
+
+Age: ${P.age}, Target retirement age: ${P.retirementAge} (${c.ytr} years away)
+Total savings: ${fmt(c.totalNow)} | Monthly contribution: ${fmt(P.monthlyContribution)}
+Monthly income: ${fmt(P.monthlyIncome)} | Monthly expenses: ${fmt(P.monthlyExpenses)}
+Projected at retirement: ${fmt(c.projected)} | Required (${P.withdrawalRate}% rule): ${fmt(c.required)}
+Status: ${c.onTrack?'ON TRACK by '+fmt(c.delta):'BEHIND by '+fmt(Math.abs(c.delta))}
+
+Accounts: Roth ${fmt(P.rothBalance)} | Traditional IRA/401k ${fmt(P.traditionalIRABalance)} | Taxable ${fmt(P.taxableAccountBalance)} | Other ${fmt(P.otherSavings)}
+Tax: ${fmt(P.taxableIncome)} income (${P.filingStatus}) | Federal ${fmt(c.tax.fed)} | State ${fmt(c.tax.state)} | Effective ${fmtPct(c.tax.effective)} | Roth headroom ${fmt(c.tax.headroom)}
+Investments: ${P.expectedReturn}% expected return
+Social Security: ${fmt(P.socialSecurityMonthly)}/mo starting age ${P.socialSecurityAge}
+
+HEALTHCARE BRIDGE: Retiring at age '+HC.retireAge+', Medicare gap = '+String(65-HC.retireAge)+' years, est. annual cost '+fmt(HC.premium*12+HC.deductible)+', total bridge est. included in planning.
+
+INDIVIDUAL HOLDINGS:
+${holdingsSummary}
+
+Be direct and specific. Reference actual numbers. Plain English. No unnecessary disclaimers. Focus on actionable near-term guidance for someone 1–3 years from retirement.`;
+
+  const apiMessages = chatHistory
+    .filter(m => m.role !== 'assistant' || chatHistory.indexOf(m) > 0)
+    .map(m => ({role: m.role, content: m.text}));
+  apiMessages.push({role:'user', content: text});
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system,
+        messages: apiMessages
+      })
+    });
+    const data = await res.json();
+    typing.remove();
+    if (data.content?.[0]?.text) {
+      addMessage('assistant', data.content[0].text);
+    } else if (data.error) {
+      addMessage('assistant', `Error: ${data.error.message || 'Something went wrong. Check your API key.'}`);
+    }
+  } catch(e) {
+    typing.remove();
+    addMessage('assistant', 'Connection error. Check your internet connection and try again.');
+  }
+
+  isLoading = false;
+  btn.disabled = false;
+  input.focus();
+}
+</script>
+</body>
+</html>
